@@ -9,7 +9,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrl: './login.component.css' // Usaremos este para estilos personalizados
 })
 export class LoginComponent {
   loginForm: FormGroup;
@@ -51,16 +51,10 @@ export class LoginComponent {
       error: (err) => {
         this.loading.set(false);
         this.error.set(err.error?.message || 'Error al conectar con el servidor');
-        console.error('Login error:', err);
       }
     });
   }
 
-  get email() {
-    return this.loginForm.get('email');
-  }
-
-  get password() {
-    return this.loginForm.get('password');
-  }
+  get email() { return this.loginForm.get('email'); }
+  get password() { return this.loginForm.get('password'); }
 }
