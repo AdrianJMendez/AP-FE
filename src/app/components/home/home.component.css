@@ -1,50 +1,64 @@
-.home-container {
-  min-height: 100vh;
-  background: #f5f5f5;
+/* Variables de Identidad UNAH */
+:host {
+  --unah-blue: #2E4C9E;
+  --unah-yellow: #FFD100;
+  display: block;
 }
 
-.navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+/* Animaciones */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-.navbar-brand h1 {
-  margin: 0;
-  font-size: 24px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.btn-logout {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid white;
-  padding: 10px 20px;
-  border-radius: 5px;
+/* Badges de Estado - CORRECCIÓN DE VISIBILIDAD */
+.badge-venta { 
+  background-color: #22c55e; 
+  color: white; 
+}
+
+.badge-intercambio { 
+  background-color: #eab308; 
+  color: white; 
+}
+
+/* Azul Cobalto Oscuro: Se lee perfecto sobre libros blancos o batas */
+.badge-prestamo { 
+  background-color: #1e3a8a; 
+  color: white !important; 
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  font-weight: 900;
+}
+
+/* Estilos de Tarjetas */
+.product-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar y Footer */
+.sidebar-sticky {
+  position: sticky;
+  top: 6rem;
+}
+
+footer {
+  flex-shrink: 0;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--unah-blue);
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.btn-logout:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.content {
-  padding: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.content h2 {
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.content p {
-  color: #666;
-  font-size: 16px;
 }

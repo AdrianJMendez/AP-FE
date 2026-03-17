@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core'; // CORREGIDO: Viene de @angular/core
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,23 +9,20 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css' // Usaremos este para estilos personalizados
+  styleUrl: './login.component.css'
 })
 export class LoginComponent {
-  loginForm: FormGroup;
-  loading = signal(false);
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private authService = inject(AuthService);
+
+  loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(4)]]
-    });
-  }
+  loginForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
@@ -36,23 +33,13 @@ export class LoginComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    const { email, password } = this.loginForm.value;
-
-    this.authService.login(email, password).subscribe({
-      next: (response) => {
-        this.loading.set(false);
-        if (response.token) {
-          this.authService.setToken(response.token);
-          this.router.navigate(['/home']);
-        } else {
-          this.error.set(response.message || 'Error en el login');
-        }
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(err.error?.message || 'Error al conectar con el servidor');
-      }
-    });
+    // Simulación para frontend
+    setTimeout(() => {
+      this.loading.set(false);
+      this.authService.setToken('token_puma_provisional_2026');
+      console.log('Login exitoso. ¡Vámonos al Home!');
+      this.router.navigate(['/home']);
+    }, 1500); 
   }
 
   get email() { return this.loginForm.get('email'); }
