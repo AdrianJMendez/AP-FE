@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core'; // CORREGIDO: Viene de @angular/core
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,36 +12,72 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
+  // Inyección de dependencias moderna con 'inject'
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
 
+  // Estados reactivos para la UI
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
+  // Definición del formulario con validaciones
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
+  // Getters para facilitar el acceso en el HTML
+  get email() { return this.loginForm.get('email'); }
+  get password() { return this.loginForm.get('password'); }
+
   onSubmit(): void {
+    // 1. Validar formulario localmente
     if (this.loginForm.invalid) {
-      this.error.set('Por favor completa correctamente el formulario');
+      this.error.set('Por favor completa correctamente el formulario.');
       return;
     }
 
     this.loading.set(true);
     this.error.set(null);
 
-    // Simulación para frontend
-    setTimeout(() => {
-      this.loading.set(false);
-      this.authService.setToken('token_puma_provisional_2026');
-      console.log('Login exitoso. ¡Vámonos al Home!');
-      this.router.navigate(['/home']);
-    }, 1500); 
-  }
+    const { email, password } = this.loginForm.value;
 
-  get email() { return this.loginForm.get('email'); }
-  get password() { return this.loginForm.get('password'); }
+    // 2. Llamada real al servicio de autenticación
+    this.authService.login(email, password).subscribe({
+      next: (response: any) => {
+        this.loading.set(false);
+
+        // Verificamos si el Procedimiento Almacenado indica éxito
+        if (response && !response.hasError) {
+          // Extraemos el ID o generamos un token provisional para la sesión
+          const userId = response.data?.idUser || 'default';
+          this.authService.setToken(`PUMA_TOKEN_${userId}`);
+          
+          console.log('Login exitoso:', response.meta[0]?.message);
+          
+          // Redirección al Home
+          this.router.navigate(['/home']);
+        } else {
+          // El servidor respondió 200 pero con error de credenciales en el body
+          const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
+          this.error.set(msg);
+        }
+      },
+      error: (err) => {
+        this.loading.set(false);
+        
+        // Manejo de errores HTTP (401, 500, o servidor apagado)
+        if (err.status === 401) {
+          // Error controlado desde el Backend (Credenciales mal)
+          const msg = err.error?.meta?.[0]?.message || 'Credenciales no válidas.';
+          this.error.set(msg);
+        } else {
+          // Error de red o servidor caído
+          this.error.set('Error de conexión con el servidor. Verifica que el Backend esté activo.');
+        }
+        console.error('Detalle del error:', err);
+      }
+    });
+  }
 }
