@@ -17,18 +17,23 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "outputPath": "dist/ap-fe",
+            "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
+              "src/favicon.ico",
+              "src/assets",
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "output": "/"
               }
             ],
             "styles": [
               "src/styles.css"
             ],
-            "outputPath": "dist/ap-fe",
+            "scripts": [],
             "outputMode": "static"
           },
           "configurations": {
@@ -50,14 +55,16 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true,
-              "ssr": false
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json" 
+          },
           "configurations": {
             "production": {
               "buildTarget": "ap-fe:build:production"
@@ -67,6 +74,9 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n"
         },
         "test": {
           "builder": "@angular/build:unit-test"
