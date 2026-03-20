@@ -1,108 +1,25 @@
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Estilo para los Inputs basado en el diseño 'ayuda puma' */
+.input-puma {
+  @apply w-full rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-base transition-all outline-none;
 }
 
-.login-box {
-  background: white;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 400px;
+.input-puma:focus {
+  @apply border-blue-400 ring-4 ring-blue-500/10 bg-white;
 }
 
-h1 {
-  text-align: center;
-  color: #667eea;
-  margin: 0 0 10px 0;
-  font-size: 28px;
+.input-puma.is-invalid {
+  @apply border-red-300 bg-red-50/30;
 }
 
-h2 {
-  text-align: center;
-  color: #333;
-  margin: 0 0 30px 0;
-  font-size: 20px;
-  font-weight: 500;
+/* Estilo para el Botón principal */
+.btn-puma-primary {
+  @apply w-auto min-w-[180px] rounded-lg bg-[#4169E1] px-12 py-3 text-lg font-medium text-white transition-all duration-200;
 }
 
-.error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 12px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  border: 1px solid #f5c6cb;
-  font-size: 14px;
+.btn-puma-primary:hover:not(:disabled) {
+  @apply bg-[#3557C1] shadow-lg transform -translate-y-0.5;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-  box-sizing: border-box;
-}
-
-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-input.is-invalid {
-  border-color: #dc3545;
-}
-
-input.is-invalid:focus {
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-}
-
-.error-text {
-  display: block;
-  color: #dc3545;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-.btn-login {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.3s;
-  margin-top: 10px;
-}
-
-.btn-login:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-login:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.btn-puma-primary:disabled {
+  @apply opacity-50 cursor-not-allowed grayscale-[0.5];
 }

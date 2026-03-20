@@ -1,13 +1,118 @@
-<div class="home-container">
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <h1>AyudaPUMA</h1>
-    </div>
-    <button class="btn-logout" (click)="logout()">Cerrar Sesión</button>
-  </nav>
+<div class="min-h-screen bg-gray-50 animate-fade-in flex flex-col">
+  <header class="px-6 py-2 text-white shadow-lg bg-[#2E4C9E]">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center cursor-pointer">
+        <img src="assets/ayudapuma.png" alt="Ayuda PUMA" class="h-20 w-auto object-contain" />
+      </div>
+      
+      <div class="flex items-center gap-6">
+        <button class="relative hover:scale-110 transition-transform">
+          <lucide-icon [name]="MessageCircle" class="w-6 h-6"></lucide-icon>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#2E4C9E]">3</span>
+        </button>
+        
+        <button (click)="showFavoritesOnly.set(!showFavoritesOnly())" class="relative hover:scale-110 transition-transform">
+          <lucide-icon [name]="Heart" [class.fill-red-500]="showFavoritesOnly()" [class.text-red-500]="showFavoritesOnly()" class="w-6 h-6"></lucide-icon>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#2E4C9E]">{{favorites().length}}</span>
+        </button>
 
-  <div class="content">
-    <h2>¡Bienvenido!</h2>
-    <p>Has iniciado sesión correctamente en AyudaPUMA.</p>
+        <div class="flex items-center gap-2 pl-4 border-l border-blue-400">
+          <div class="w-9 h-9 bg-blue-800 rounded-full flex items-center justify-center border border-blue-300">
+            <lucide-icon [name]="User" class="w-5 h-5"></lucide-icon>
+          </div>
+          <div class="hidden md:flex flex-col text-left">
+            <span class="text-xs font-semibold uppercase tracking-tighter">André López</span>
+            <span class="text-[10px] text-blue-200">Ingeniería UNAH</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="bg-white border-b sticky top-0 z-10 px-6 py-4 shadow-sm">
+    <div class="max-w-7xl mx-auto relative">
+      <lucide-icon [name]="Search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></lucide-icon>
+      <input 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event)"
+        type="text" 
+        placeholder=" ¿Qué necesitas hoy?" 
+        class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all outline-none text-gray-700"
+      />
+    </div>
   </div>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-8 flex-grow w-full">
+    <aside class="w-full md:w-64 space-y-6">
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sidebar-sticky">
+        <h4 class="font-bold text-sm mb-4 text-gray-800 uppercase tracking-widest text-[10px]">Categoría</h4>
+        <div class="space-y-3">
+          @for (cat of ['Libros', 'Uniformes', 'Calculadoras', 'Electrónicos']; track cat) {
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" (change)="toggleFilter('material', cat)" class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">{{cat}}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </aside>
+
+    <section class="flex-1">
+      <div [class]="viewMode() === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'flex flex-col gap-4'">
+        @for (product of (activeTab() === 'todos' ? filteredProducts() : myProducts); track product.id) {
+          <div class="product-card bg-white rounded-[2rem] overflow-hidden group shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div class="relative overflow-hidden aspect-[4/3] bg-gray-100">
+              <img [src]="product.image" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              
+              <div class="absolute top-4 left-4">
+                <span [class]="'px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg badge-' + product.status.toLowerCase()">
+                  {{product.status}}
+                </span>
+              </div>
+
+              <button (click)="toggleFavorite(product.id)" class="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-lg">
+                <lucide-icon [name]="Heart" [class.fill-red-500]="favorites().includes(product.id)" [class.text-red-500]="favorites().includes(product.id)" class="w-4 h-4"></lucide-icon>
+              </button>
+            </div>
+            
+            <div class="p-6">
+              <h3 class="font-bold text-gray-800 text-lg line-clamp-1 mb-1">{{product.title}}</h3>
+              <p class="text-blue-700 font-black text-xl mb-4">
+                @if (product.price > 0) { L. {{product.price | number:'1.2-2'}} } @else { GRATIS }
+              </p>
+              <div class="flex flex-wrap gap-2 mb-6">
+                @for (tag of product.tags; track tag) {
+                  <span class="px-2.5 py-1 bg-gray-100 text-gray-400 text-[9px] rounded-md uppercase font-black tracking-tighter">{{tag}}</span>
+                }
+              </div>
+              <button class="w-full py-3.5 bg-gray-50 text-[#2E4C9E] font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-[#2E4C9E] hover:text-white transition-all border border-blue-50">
+                Ver Detalles
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-[#2E4C9E] text-white py-12 px-6 mt-auto">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+      <div class="space-y-4">
+        <img src="assets/ayudapuma.png" alt="Ayuda PUMA" class="h-16 w-auto object-contain" />
+        <p class="text-blue-100 text-sm leading-relaxed max-w-xs">
+          Red de apoyo estudiantil para la Facultad de Ingeniería de la UNAH.
+        </p>
+      </div>
+      <div class="space-y-4">
+        <h4 class="text-[#FFD100] font-black uppercase text-xs tracking-widest">Soporte</h4>
+        <ul class="space-y-3 text-sm text-blue-50 font-medium">
+          <li class="flex items-center gap-3"><lucide-icon [name]="MessageCircle" class="w-4 h-4 text-[#FFD100]"></lucide-icon> WhatsApp: +504 9563-5984</li>
+        </ul>
+      </div>
+      <div class="flex flex-col md:items-end justify-end">
+        <p class="text-[#FFD100] font-bold text-sm italic">"Somos tus amistades novacionales"</p>
+        <p class="text-blue-200 text-[10px] font-black uppercase tracking-tighter mt-2">© 2026 Ayuda Puma - UNAH</p>
+      </div>
+    </div>
+  </footer>
 </div>
