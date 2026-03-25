@@ -1,4 +1,4 @@
-/* Estilo para los Inputs basado en el diseño 'ayuda puma' */
+
 .input-puma {
   @apply w-full rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-base transition-all outline-none;
 }
@@ -11,7 +11,6 @@
   @apply border-red-300 bg-red-50/30;
 }
 
-/* Estilo para el Botón principal */
 .btn-puma-primary {
   @apply w-auto min-w-[180px] rounded-lg bg-[#4169E1] px-12 py-3 text-lg font-medium text-white transition-all duration-200;
 }
