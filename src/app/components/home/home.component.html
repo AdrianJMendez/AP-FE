@@ -19,7 +19,6 @@
           </span>
         </button>
 
-       
         <div class="flex items-center gap-2 pl-4 border-l border-blue-400">
           <div class="w-9 h-9 bg-blue-800 rounded-full flex items-center justify-center border border-blue-300">
             <lucide-icon [name]="User" class="w-5 h-5"></lucide-icon>
@@ -48,14 +47,12 @@
 
   <main class="max-w-7xl mx-auto px-6 py-8 w-full flex-grow flex flex-col md:flex-row gap-8">
 
- 
     <aside class="w-full md:w-64 space-y-6 flex-shrink-0">
       <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sidebar-sticky">
 
-    
         <h4 class="filter-label">Categoría</h4>
         <div class="space-y-3">
-          @for (cat of ['Libros','Uniformes','Calculadoras','Electrónicos','Otros']; track cat) {
+          @for (cat of ['Tecnología','Libros y Material Académico','Uniformes','Electrodomésticos','Ropa y Accesorios','Deportes','Hogar','Instrumentos Musicales','Otros']; track cat) {
             <label class="filter-item">
               <input type="checkbox"
                      (change)="toggleFilter('material', cat)"
@@ -66,10 +63,9 @@
           }
         </div>
 
-    
         <h4 class="filter-label mt-8">Modalidad</h4>
         <div class="space-y-3">
-          @for (mod of ['Venta','Intercambio','Préstamo','Donación']; track mod) {
+          @for (mod of ['Venta','Intercambio','Donación']; track mod) {
             <label class="filter-item">
               <input type="checkbox"
                      (change)="toggleFilter('modality', mod)"
@@ -81,7 +77,7 @@
         </div>
 
         <h4 class="filter-label mt-8">Precio Máximo</h4>
-        <input type="range" min="0" max="10000" step="100"
+        <input type="range" min="0" max="15000" step="100"
                [ngModel]="priceRange()"
                (ngModelChange)="priceRange.set($event)"
                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#2E4C9E]" />
@@ -91,10 +87,8 @@
       </div>
     </aside>
 
-   
     <section class="flex-1 min-w-0">
 
-  
       <div class="flex gap-8 border-b mb-6">
         <button (click)="activeTab.set('todos'); currentPage.set(1)"
                 class="tab-btn"
@@ -116,12 +110,11 @@
         </button>
       </div>
 
-     
       <div class="flex items-center justify-between mb-5">
         <p class="text-sm text-gray-500">
           Mostrando
           <span class="font-semibold text-gray-700">
-            {{ activeTab() === 'mis' ? myProducts.length : filteredProducts().length }}
+            {{ activeTab() === 'mis' ? myProductsSignal().length : filteredProducts().length }}
           </span>
           resultados
         </p>
@@ -139,10 +132,9 @@
         </div>
       </div>
 
-      
+      <!-- TAB: CATÁLOGO GENERAL -->
       @if (activeTab() === 'todos') {
 
-        
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @for (product of pagedProducts(); track product.id) {
@@ -183,7 +175,6 @@
           </div>
         }
 
-      
         @if (viewMode() === 'list') {
           <div class="flex flex-col gap-4">
             @for (product of pagedProducts(); track product.id) {
@@ -228,7 +219,7 @@
           </div>
         }
 
-       
+        <!-- Paginación Catálogo General -->
         @if (totalPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
             <button (click)="setPage(currentPage() - 1)"
@@ -257,10 +248,10 @@
         }
       }
 
-     
+      <!-- TAB: MIS PUBLICACIONES -->
       @if (activeTab() === 'mis') {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (product of myProducts; track product.id) {
+          @for (product of pagedMyProducts(); track product.id) {
             <div (click)="openDetail(product)"
                  class="product-card flex flex-col h-full group cursor-pointer">
               <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
@@ -273,7 +264,6 @@
               <div class="p-5 flex flex-col flex-grow">
                 <h3 class="font-bold text-gray-800 text-base mb-3 line-clamp-2">{{ product.title }}</h3>
 
-              
                 <div class="grid grid-cols-3 gap-2 py-3 bg-gray-50 rounded-2xl mb-4 text-center border border-gray-100">
                   <div>
                     <p class="text-[9px] text-gray-400 font-black uppercase">Vistas</p>
@@ -302,12 +292,39 @@
             </div>
           }
         </div>
+
+        <!-- Paginación Mis Publicaciones -->
+        @if (totalMyPages() > 1) {
+          <div class="flex items-center justify-center gap-3 mt-8">
+            <button (click)="setMyPage(currentMyPage() - 1)"
+                    [disabled]="currentMyPage() === 1"
+                    class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
+                           hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Anterior
+            </button>
+            @for (p of [].constructor(totalMyPages()); track $index) {
+              <button (click)="setMyPage($index + 1)"
+                      [class.bg-[#2E4C9E]]="currentMyPage() === $index + 1"
+                      [class.text-white]="currentMyPage() === $index + 1"
+                      [class.border-[#2E4C9E]]="currentMyPage() === $index + 1"
+                      class="w-9 h-9 rounded-xl border border-gray-200 text-sm font-medium
+                             hover:bg-gray-50 transition-colors">
+                {{ $index + 1 }}
+              </button>
+            }
+            <button (click)="setMyPage(currentMyPage() + 1)"
+                    [disabled]="currentMyPage() >= totalMyPages()"
+                    class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
+                           hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Siguiente
+            </button>
+          </div>
+        }
       }
 
     </section>
   </main>
 
-  
   <footer class="bg-[#2C2C2C] text-white mt-12 py-10">
     <div class="max-w-7xl mx-auto px-6">
       <div class="grid grid-cols-2 gap-12 mb-8">
@@ -349,256 +366,264 @@
 </button>
 
 
-  @if (selectedProduct()) {
-    <div class="modal-overlay">
-      <div (click)="closeDetail()" class="modal-backdrop"></div>
-      <div class="modal-box animate-modal-in">
+@if (selectedProduct()) {
+  <div class="modal-overlay">
+    <div (click)="closeDetail()" class="modal-backdrop"></div>
+    <div class="modal-box animate-modal-in">
 
-       
-        <button (click)="closeDetail()" class="modal-close-btn">
-          <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
-        </button>
+      <button (click)="closeDetail()" class="modal-close-btn">
+        <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
+      </button>
 
-        
-        <div class="modal-inner">
+      <div class="modal-inner">
 
-        
-          <div class="modal-img-col">
-            <img [src]="selectedProduct()?.image"
-                 [alt]="selectedProduct()?.title"
-                 class="modal-img" />
-            <span class="status-badge modal-status-badge
-                         {{ getStatusBg(selectedProduct()!.status) }}
-                         {{ getStatusText(selectedProduct()!.status) }}">
-              {{ selectedProduct()?.status }}
-            </span>
-          </div>
-
-        
-          <div class="modal-info-col">
-
-            <div class="flex items-center gap-2 mb-2">
-              <span class="modal-cat-badge">{{ selectedProduct()?.category }}</span>
-              <span class="modal-career-label">{{ selectedProduct()?.career }}</span>
-            </div>
-
-            <h2 class="modal-title">{{ selectedProduct()?.title }}</h2>
-
-            <p class="modal-desc">{{ selectedProduct()?.description }}</p>
-
-            
-            <div class="flex flex-wrap gap-1 mb-3">
-              @for (tag of selectedProduct()?.tags ?? []; track tag) {
-                <span class="tag">{{ tag }}</span>
-              }
-            </div>
-
-         
-            <div class="flex items-center justify-between mb-3">
-              <div>
-                <p class="modal-meta-label">Precio</p>
-                <p class="modal-price">
-                  {{ selectedProduct()!.price > 0 ? 'L. ' + (selectedProduct()!.price | number:'1.2-2') : 'Gratis' }}
-                </p>
-              </div>
-              <div class="text-right">
-                <p class="modal-meta-label">Estado</p>
-                <span class="status-badge {{ getStatusBg(selectedProduct()!.status) }} {{ getStatusText(selectedProduct()!.status) }}">
-                  {{ selectedProduct()?.status }}
-                </span>
-              </div>
-            </div>
-
-          
-            @if (selectedProduct()?.views !== undefined) {
-              <div class="modal-stats">
-                <div class="text-center">
-                  <p class="modal-stat-label">Vistas</p>
-                  <p class="modal-stat-val text-[#2E4C9E]">{{ selectedProduct()?.views }}</p>
-                </div>
-                <div class="text-center">
-                  <p class="modal-stat-label">Guardado</p>
-                  <p class="modal-stat-val text-red-500">{{ selectedProduct()?.savedBy }}</p>
-                </div>
-                <div class="text-center">
-                  <p class="modal-stat-label">Mensajes</p>
-                  <p class="modal-stat-val text-blue-600">{{ selectedProduct()?.messages }}</p>
-                </div>
-              </div>
-            }
-
-            
-            <div class="flex gap-2 mt-auto pt-3">
-              <button class="modal-action-btn">
-                <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
-                CONTACTAR
-              </button>
-              <button (click)="toggleFavorite($event, selectedProduct()!.id)"
-                      class="modal-fav-btn fav-btn">
-                <lucide-icon [name]="Heart"
-                             [class.fav-active]="favorites().includes(selectedProduct()!.id)"
-                             [class.fav-inactive]="!favorites().includes(selectedProduct()!.id)"
-                             class="w-5 h-5"></lucide-icon>
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  @if (isAddDialogOpen()) {
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-      <div (click)="closeAddDialog()"
-           class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
-      <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative
-                  flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
-      
-        <div class="p-8 pb-0 flex items-start justify-between">
-          <div>
-            <h2 class="text-2xl font-black text-gray-900">Nuevo producto</h2>
-            <p class="text-sm text-gray-500 mt-1">Completa los datos para publicar</p>
-          </div>
-          <button (click)="closeAddDialog()"
-                  class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
-            <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
-          </button>
+        <div class="modal-img-col">
+          <img [src]="selectedProduct()?.image"
+               [alt]="selectedProduct()?.title"
+               class="modal-img" />
+          <span class="status-badge modal-status-badge
+                       {{ getStatusBg(selectedProduct()!.status) }}
+                       {{ getStatusText(selectedProduct()!.status) }}">
+            {{ selectedProduct()?.status }}
+          </span>
         </div>
 
-     
-        <div class="p-8 overflow-y-auto flex-1 space-y-5">
+        <div class="modal-info-col">
 
-       
-          <div class="form-group">
-            <label class="form-label">Título *</label>
-            <input [ngModel]="newProduct().title"
-                   (ngModelChange)="setNewProductField('title', $event)"
-                   type="text" placeholder="Ej: Calculadora Científica HP"
-                   class="form-input" />
+          <div class="flex items-center gap-2 mb-2">
+            <span class="modal-cat-badge">{{ selectedProduct()?.category }}</span>
+            <span class="modal-career-label">{{ selectedProduct()?.career }}</span>
           </div>
 
-          
-          <div class="form-group">
-            <label class="form-label">Imagen del producto *</label>
-            @if (imagePreviewUrl()) {
-              <div class="relative mb-3">
-                <img [src]="imagePreviewUrl()" alt="Preview"
-                     class="max-h-40 w-full rounded-2xl object-cover border border-gray-200" />
-                <button (click)="clearImage()"
-                        class="absolute top-2 right-2 p-1 bg-white rounded-full shadow">
-                  <lucide-icon [name]="X" class="w-4 h-4 text-gray-600"></lucide-icon>
-                </button>
+          <h2 class="modal-title">{{ selectedProduct()?.title }}</h2>
+
+          <p class="modal-desc">{{ selectedProduct()?.description }}</p>
+
+          <div class="flex flex-wrap gap-1 mb-3">
+            @for (tag of selectedProduct()?.tags ?? []; track tag) {
+              <span class="tag">{{ tag }}</span>
+            }
+          </div>
+
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="modal-meta-label">Precio</p>
+              <p class="modal-price">
+                {{ selectedProduct()!.price > 0 ? 'L. ' + (selectedProduct()!.price | number:'1.2-2') : 'Gratis' }}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="modal-meta-label">Estado</p>
+              <span class="status-badge {{ getStatusBg(selectedProduct()!.status) }} {{ getStatusText(selectedProduct()!.status) }}">
+                {{ selectedProduct()?.status }}
+              </span>
+            </div>
+          </div>
+
+          @if (isMyProduct()(selectedProduct()!)) {
+            <div class="modal-stats">
+              <div class="text-center">
+                <p class="modal-stat-label">Vistas</p>
+                <p class="modal-stat-val text-[#2E4C9E]">{{ selectedProduct()?.views }}</p>
               </div>
-            }
-            @if (!imagePreviewUrl()) {
-              <label class="file-upload-area" for="fileInput">
-                <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
-                <span class="text-sm font-semibold text-gray-600">Haz clic para subir una imagen</span>
-                <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
-              </label>
-            }
-            <input id="fileInput" type="file" accept="image/*"
-                   (change)="onFileSelected($event)"
-                   class="hidden" />
-          </div>
-
-   
-          <div class="form-group">
-            <label class="form-label">Modalidad *</label>
-            <select [ngModel]="newProduct().status"
-                    (ngModelChange)="setNewProductField('status', $event)"
-                    class="form-input">
-              <option value="Venta">Venta</option>
-              <option value="Donación">Donación</option>
-              <option value="Préstamo">Préstamo</option>
-              <option value="Intercambio">Intercambio</option>
-            </select>
-          </div>
-
-    
-          @if (newProduct().status === 'Venta' || newProduct().status === 'Intercambio') {
-            <div class="form-group">
-              <label class="form-label">Precio (L.)</label>
-              <input [ngModel]="newProduct().price"
-                     (ngModelChange)="setNewProductField('price', $event)"
-                     type="number" placeholder="0.00"
-                     class="form-input" />
+              <div class="text-center">
+                <p class="modal-stat-label">Guardado</p>
+                <p class="modal-stat-val text-red-500">{{ selectedProduct()?.savedBy }}</p>
+              </div>
+              <div class="text-center">
+                <p class="modal-stat-label">Mensajes</p>
+                <p class="modal-stat-val text-blue-600">{{ selectedProduct()?.messages }}</p>
+              </div>
             </div>
           }
 
-          
-          <div class="form-group">
-            <label class="form-label">Categoría *</label>
-            <select [ngModel]="newProduct().category"
-                    (ngModelChange)="setNewProductField('category', $event)"
-                    class="form-input">
-              <option value="" disabled>Selecciona una categoría</option>
-              <option value="Libros">Libros</option>
-              <option value="Uniformes">Uniformes</option>
-              <option value="Calculadoras">Calculadoras</option>
-              <option value="Electrónicos">Electrónicos</option>
-              <option value="Otros">Otros</option>
-            </select>
+          <div class="flex gap-2 mt-auto pt-3">
+            <button class="modal-action-btn">
+              <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
+              CONTACTAR
+            </button>
+            <button (click)="toggleFavorite($event, selectedProduct()!.id)"
+                    class="modal-fav-btn fav-btn">
+              <lucide-icon [name]="Heart"
+                           [class.fav-active]="favorites().includes(selectedProduct()!.id)"
+                           [class.fav-inactive]="!favorites().includes(selectedProduct()!.id)"
+                           class="w-5 h-5"></lucide-icon>
+            </button>
           </div>
 
-     
-          <div class="form-group">
-            <label class="form-label">Condición *</label>
-            <select [ngModel]="newProduct().condition"
-                    (ngModelChange)="setNewProductField('condition', $event)"
-                    class="form-input">
-              <option value="Nuevo">Nuevo</option>
-              <option value="Usado">Usado</option>
-            </select>
-          </div>
-
-         
-          <div class="form-group">
-            <label class="form-label">Carrera *</label>
-            <select [ngModel]="newProduct().career"
-                    (ngModelChange)="setNewProductField('career', $event)"
-                    class="form-input">
-              <option value="" disabled>Selecciona tu carrera</option>
-              <option value="Todas">Todas</option>
-              <option value="Ingeniería">Ingeniería</option>
-              <option value="Ciencias de la Salud">Ciencias de la Salud</option>
-              <option value="Artes">Artes</option>
-              <option value="Ciencias Jurídicas">Ciencias Jurídicas</option>
-              <option value="Arquitectura">Arquitectura</option>
-              <option value="Biología">Biología</option>
-            </select>
-          </div>
-
-      
-          <div class="form-group">
-            <label class="form-label">Etiquetas (separadas por coma)</label>
-            <input type="text"
-                   placeholder="Ej: Usado, Ingeniería, Completo"
-                   (input)="onTagsChange($any($event.target).value)"
-                   class="form-input" />
-            @if (newProduct().tags.length > 0) {
-              <div class="flex flex-wrap gap-1 mt-2">
-                @for (tag of newProduct().tags; track tag) {
-                  <span class="tag">{{ tag }}</span>
-                }
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
-          <button (click)="closeAddDialog()"
-                  class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold
-                         text-gray-600 hover:bg-gray-50 transition-colors">
-            Cancelar
-          </button>
-          <button (click)="publishProduct()"
-                  class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold
-                         hover:bg-blue-800 transition-colors shadow-md shadow-blue-200">
-            Publicar producto
-          </button>
         </div>
       </div>
     </div>
-  }
+  </div>
+}
+
+@if (isAddDialogOpen()) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div (click)="closeAddDialog()"
+         class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative
+                flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
+
+      <div class="p-8 pb-0 flex items-start justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-gray-900">Nuevo producto</h2>
+          <p class="text-sm text-gray-500 mt-1">Completa los datos para publicar</p>
+        </div>
+        <button (click)="closeAddDialog()"
+                class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
+          <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="p-8 overflow-y-auto flex-1 space-y-5">
+
+        <!-- Título -->
+        <div class="form-group">
+          <label class="form-label">Título *</label>
+          <input [ngModel]="newProduct().title"
+                 (ngModelChange)="setNewProductField('title', $event)"
+                 type="text" placeholder="Ej: Calculadora Científica HP"
+                 class="form-input" />
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label class="form-label">Descripción *</label>
+          <textarea [ngModel]="newProduct().description"
+                    (ngModelChange)="setNewProductField('description', $event)"
+                    rows="3"
+                    placeholder="Describe el estado, características y detalles del producto..."
+                    class="form-input resize-none"></textarea>
+        </div>
+
+        <!-- Imagen -->
+        <div class="form-group">
+          <label class="form-label">Imagen del producto *</label>
+          @if (imagePreviewUrl()) {
+            <div class="relative mb-3">
+              <img [src]="imagePreviewUrl()" alt="Preview"
+                   class="max-h-40 w-full rounded-2xl object-cover border border-gray-200" />
+              <button (click)="clearImage()"
+                      class="absolute top-2 right-2 p-1 bg-white rounded-full shadow">
+                <lucide-icon [name]="X" class="w-4 h-4 text-gray-600"></lucide-icon>
+              </button>
+            </div>
+          }
+          @if (!imagePreviewUrl()) {
+            <label class="file-upload-area" for="fileInput">
+              <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
+              <span class="text-sm font-semibold text-gray-600">Haz clic para subir una imagen</span>
+              <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
+            </label>
+          }
+          <input id="fileInput" type="file" accept="image/*"
+                 (change)="onFileSelected($event)"
+                 class="hidden" />
+        </div>
+
+        <!-- Modalidad -->
+        <div class="form-group">
+          <label class="form-label">Modalidad *</label>
+          <select [ngModel]="newProduct().status"
+                  (ngModelChange)="setNewProductField('status', $event)"
+                  class="form-input">
+            <option value="Venta">Venta</option>
+            <option value="Intercambio">Intercambio</option>
+            <option value="Donación">Donación</option>
+          </select>
+        </div>
+
+        <!-- Precio (solo Venta e Intercambio) -->
+        @if (newProduct().status === 'Venta' || newProduct().status === 'Intercambio') {
+          <div class="form-group">
+            <label class="form-label">Precio (L.)</label>
+            <input [ngModel]="newProduct().price"
+                   (ngModelChange)="setNewProductField('price', $event)"
+                   type="number" placeholder="0.00"
+                   class="form-input" />
+          </div>
+        }
+
+        <!-- Categoría -->
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select [ngModel]="newProduct().category"
+                  (ngModelChange)="setNewProductField('category', $event)"
+                  class="form-input">
+            <option value="" disabled>Selecciona una categoría</option>
+            <option value="Tecnología">Tecnología</option>
+            <option value="Libros y Material Académico">Libros y Material Académico</option>
+            <option value="Uniformes">Uniformes</option>
+            <option value="Electrodomésticos">Electrodomésticos</option>
+            <option value="Ropa y Accesorios">Ropa y Accesorios</option>
+            <option value="Deportes">Deportes</option>
+            <option value="Hogar">Hogar</option>
+            <option value="Instrumentos Musicales">Instrumentos Musicales</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+
+        <!-- Condición -->
+        <div class="form-group">
+          <label class="form-label">Condición *</label>
+          <select [ngModel]="newProduct().condition"
+                  (ngModelChange)="setNewProductField('condition', $event)"
+                  class="form-input">
+            <option value="Nuevo">Nuevo</option>
+            <option value="Usado">Usado</option>
+          </select>
+        </div>
+
+        <!-- Carrera -->
+        <div class="form-group">
+          <label class="form-label">Carrera *</label>
+          <select [ngModel]="newProduct().career"
+                  (ngModelChange)="setNewProductField('career', $event)"
+                  class="form-input">
+            <option value="" disabled>Selecciona tu carrera</option>
+            <option value="Todas">Todas</option>
+            <option value="Ingeniería">Ingeniería</option>
+            <option value="Ciencias de la Salud">Ciencias de la Salud</option>
+            <option value="Artes">Artes</option>
+            <option value="Ciencias Jurídicas">Ciencias Jurídicas</option>
+            <option value="Arquitectura">Arquitectura</option>
+            <option value="Biología">Biología</option>
+          </select>
+        </div>
+
+        <!-- Etiquetas -->
+        <div class="form-group">
+          <label class="form-label">Etiquetas (separadas por coma)</label>
+          <input type="text"
+                 placeholder="Ej: Usado, Ingeniería, Completo"
+                 (input)="onTagsChange($any($event.target).value)"
+                 class="form-input" />
+          @if (newProduct().tags.length > 0) {
+            <div class="flex flex-wrap gap-1 mt-2">
+              @for (tag of newProduct().tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
+        <button (click)="closeAddDialog()"
+                class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold
+                       text-gray-600 hover:bg-gray-50 transition-colors">
+          Cancelar
+        </button>
+        <button (click)="publishProduct()"
+                [disabled]="isSaving()"
+                class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold
+                       hover:bg-blue-800 transition-colors shadow-md shadow-blue-200
+                       disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ isSaving() ? 'Publicando...' : 'Publicar producto' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

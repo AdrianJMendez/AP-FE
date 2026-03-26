@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ProductService } from '../../services/product.service';
 import {
   LucideAngularModule,
   Search,
@@ -14,8 +15,6 @@ import {
   List,
   Eye,
   Upload,
-  ChevronLeft,
-  ChevronRight,
   MoreVertical
 } from 'lucide-angular';
 
@@ -23,7 +22,7 @@ interface Product {
   id: number;
   title: string;
   image: string;
-  status: 'Venta' | 'Intercambio' | 'Préstamo' | 'Donación';
+  status: 'Venta' | 'Intercambio' | 'Donación';
   price: number;
   tags: string[];
   category: string;
@@ -32,7 +31,32 @@ interface Product {
   views?: number;
   savedBy?: number;
   messages?: number;
+  owner?: string;
+  ownerId?: number;
 }
+
+const MODALITY_MAP: Record<string, number> = {
+  'Venta': 1,
+  'Intercambio': 2,
+  'Donación': 3
+};
+
+const CATEGORY_MAP: Record<string, number> = {
+  'Tecnología': 1,
+  'Libros y Material Académico': 2,
+  'Uniformes': 3,
+  'Electrodomésticos': 4,
+  'Ropa y Accesorios': 5,
+  'Deportes': 6,
+  'Hogar': 7,
+  'Instrumentos Musicales': 8,
+  'Otros': 9
+};
+
+const CONDITION_MAP: Record<string, number> = {
+  'Nuevo': 1,
+  'Usado': 2
+};
 
 @Component({
   selector: 'app-home',
@@ -41,8 +65,9 @@ interface Product {
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent {
-  // Iconos
+export class HomeComponent implements OnInit {
+  private productService = inject(ProductService);
+
   readonly Search = Search;
   readonly MessageCircle = MessageCircle;
   readonly Heart = Heart;
@@ -56,22 +81,30 @@ export class HomeComponent {
   readonly List = List;
   readonly Grid3x3 = Grid3x3;
 
-  // Estados
+  productsSignal = signal<Product[]>([]);
+  myProductsSignal = signal<Product[]>([]);
+
   searchQuery = signal('');
   showFavoritesOnly = signal(false);
   activeTab = signal<'todos' | 'mis'>('todos');
   selectedProduct = signal<Product | null>(null);
-  priceRange = signal<number>(10000);
+  priceRange = signal<number>(15000);
   viewMode = signal<'grid' | 'list'>('grid');
+
   currentPage = signal(1);
+  totalPagesFromServer = signal(1);
+  currentMyPage = signal(1);
+
   isAddDialogOpen = signal(false);
   imagePreviewUrl = signal('');
+  isSaving = signal(false);
+  isUploadingImage = signal(false); // Estado para saber si la imagen se está subiendo
 
-  // Nuevo producto
   newProduct = signal({
     title: '',
+    description: '',
     image: '',
-    status: 'Venta' as 'Venta' | 'Intercambio' | 'Préstamo' | 'Donación',
+    status: 'Venta' as 'Venta' | 'Intercambio' | 'Donación',
     price: '',
     condition: 'Usado',
     category: '',
@@ -79,75 +112,109 @@ export class HomeComponent {
     tags: [] as string[],
   });
 
-  // Filtros
   selectedMaterials = signal<string[]>([]);
   selectedModalities = signal<string[]>([]);
   selectedCareers = signal<string[]>([]);
-  favorites = signal<number[]>([2, 3, 6, 7, 11]);
+  favorites = signal<number[]>([]);
 
   readonly itemsPerPage = 9;
 
   readonly statusColors: Record<string, { bg: string; text: string }> = {
-    Venta:      { bg: 'bg-green-100',  text: 'text-green-700' },
-    Donación:   { bg: 'bg-blue-100',   text: 'text-blue-700' },
-    Préstamo:   { bg: 'bg-purple-100', text: 'text-purple-700' },
-    Intercambio:{ bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    Venta:       { bg: 'bg-green-100',  text: 'text-green-700' },
+    Donación:    { bg: 'bg-blue-100',   text: 'text-blue-700' },
+    Intercambio: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
   };
 
-  getStatusBg(status: string): string {
-    return this.statusColors[status]?.bg ?? 'bg-gray-100';
+  ngOnInit() {
+    this.loadProducts();
   }
 
-  getStatusText(status: string): string {
-    return this.statusColors[status]?.text ?? 'text-gray-700';
+  loadProducts() {
+    this.productService.getProducts(this.currentPage()).subscribe({
+      next: (response: any) => {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const rawData = response.data || [];
+        const currentUserId = currentUser?.idUser;
+
+        this.totalPagesFromServer.set(response.meta?.[0]?.totalPages ?? 1);
+
+        const mapped: Product[] = rawData.map((p: any) => ({
+          id: p.idProduct,
+          title: p.productName,
+          image: (p.images && p.images.length > 0)
+                  ? p.images[0].imageUrl
+                  : 'assets/productos/default.jpg',
+          status: p.modalityName as any,
+          price: p.price,
+          tags: [p.categoryName, p.conditionName].filter(Boolean),
+          category: p.categoryName || 'Otros',
+          career: 'Todas',
+          description: p.description,
+          owner: `${p.firstName} ${p.lastName}`,
+          ownerId: p.idUser,
+          views: Math.floor(Math.random() * 100),
+          savedBy: Math.floor(Math.random() * 20),
+          messages: Math.floor(Math.random() * 5)
+        }));
+
+        this.productsSignal.set(mapped);
+        this.myProductsSignal.set(mapped.filter(p => p.ownerId === Number(currentUserId)));
+      },
+      error: (err: any) => console.error('Error al conectar con la API:', err)
+    });
   }
 
-  // Catálogo completo (12 productos)
-  products: Product[] = [
-    { id: 1,  title: 'Laptop Hp Premium',        image: 'assets/productos/laptophp.jpeg',        status: 'Venta',      price: 8000, tags: ['Usado', 'Ingeniería'],  category: 'Electrónicos',  career: 'Ingeniería',          description: 'Laptop de alto rendimiento ideal para estudiantes de ingeniería y diseño.' },
-    { id: 2,  title: 'Bata de Laboratorio',       image: 'assets/productos/batalab.jpg',          status: 'Venta',      price: 350,  tags: ['Nuevo', 'Salud'],       category: 'Uniformes',     career: 'Ciencias de la Salud', description: 'Bata blanca de algodón, reglamentaria para laboratorios de la facultad.' },
-    { id: 3,  title: 'Calculadora HP 50g',        image: 'assets/productos/calculadorahp.jpg',    status: 'Intercambio',price: 0,    tags: ['Usado', 'Completo'],    category: 'Calculadoras',  career: 'Ingeniería',          description: 'Calculadora gráfica en excelente estado, incluye estuche original.' },
-    { id: 4,  title: 'Libro: Cálculo de Stewart', image: 'assets/productos/librocalculo.jpg',     status: 'Venta',      price: 800,  tags: ['Fisico', '7ma Ed.'],    category: 'Libros',        career: 'Todas',               description: 'Libro de Cálculo de una variable, séptima edición. Sin rayones.' },
-    { id: 5,  title: 'Kit de Dibujo Técnico',     image: 'assets/productos/kitdibujo.jpg',        status: 'Venta',      price: 450,  tags: ['Completo'],             category: 'Otros',         career: 'Ingeniería',          description: 'Incluye tablero, escuadras y compás profesional.' },
-    { id: 6,  title: 'Estetoscopio Littmann',     image: 'assets/productos/estetoscopio.png',     status: 'Venta',      price: 2100, tags: ['Profesional'],          category: 'Otros',         career: 'Ciencias de la Salud', description: 'Estetoscopio Littmann Classic III, poco uso.' },
-    { id: 7,  title: 'Libro de Anatomía Gray',    image: 'assets/productos/librogray.jpg',        status: 'Intercambio',price: 0,    tags: ['Como nuevo'],           category: 'Libros',        career: 'Ciencias de la Salud', description: 'Libro de anatomía para estudiantes de medicina, tapa dura.' },
-    { id: 8,  title: 'Uniforme de Odontología',   image: 'assets/productos/uniformeodonto.jpg',   status: 'Venta',      price: 600,  tags: ['Talla M'],              category: 'Uniformes',     career: 'Ciencias de la Salud', description: 'Filipina y pantalón de odontología, color reglamentario.' },
-    { id: 9,  title: 'Tableta Gráfica Wacom',     image: 'assets/productos/tabletawacom.jpg',     status: 'Venta',      price: 1500, tags: ['Diseño'],               category: 'Electrónicos',  career: 'Artes',               description: 'Wacom Intuos Small, perfecta para dibujo digital y edición.' },
-    { id: 10, title: 'Código Civil Honduras',     image: 'assets/productos/codigocivil.jpg',      status: 'Venta',      price: 1500, tags: ['Derecho'],              category: 'Libros',        career: 'Ciencias Jurídicas',  description: 'Última edición actualizada del Código Civil de Honduras.' },
-    { id: 11, title: 'Microscopio Monocular',     image: 'assets/productos/micro.jpg',            status: 'Venta',      price: 3200, tags: ['Laboratorio'],          category: 'Electrónicos',  career: 'Biología',            description: 'Microscopio para laboratorio biológico, 400x de aumento.' },
-    { id: 12, title: 'Planos de Arquitectura',    image: 'assets/productos/portaplanos.jpg',      status: 'Intercambio',price: 0,    tags: ['Referencia'],           category: 'Otros',         career: 'Arquitectura',        description: 'Tubo portaplanos resistente y ajustable.' }
-  ];
+  setNewProductField(field: string, value: any) {
+    this.newProduct.update(p => ({ ...p, [field]: value }));
+  }
 
-  // Productos propios
-  myProducts: Product[] = [
-    { id: 101, title: 'Calculadora HP 50g (Mía)', image: 'assets/productos/calculadorahp.jpg', status: 'Venta',  price: 350, tags: ['Ingeniería'], category: 'Calculadoras', career: 'Ingeniería',           description: 'Mi calculadora personal.',   views: 127, savedBy: 15, messages: 8 },
-    { id: 102, title: 'Bata de Laboratorio',      image: 'assets/productos/batalab.jpg',       status: 'Venta',  price: 200, tags: ['Salud'],      category: 'Uniformes',    career: 'Ciencias de la Salud', description: 'Bata en buen estado.',       views: 84,  savedBy: 6,  messages: 2 }
-  ];
+  clearImage() {
+    this.imagePreviewUrl.set('');
+    this.newProduct.update(p => ({ ...p, image: '' }));
+  }
+
+  onTagsChange(value: string) {
+    const tags = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    this.newProduct.update(p => ({ ...p, tags }));
+  }
 
   filteredProducts = computed(() => {
-    let result = this.products.filter(p => {
-      const matchesSearch    = p.title.toLowerCase().includes(this.searchQuery().toLowerCase());
-      const matchesMaterial  = this.selectedMaterials().length === 0 || this.selectedMaterials().includes(p.category);
-      const matchesModality  = this.selectedModalities().length === 0 || this.selectedModalities().includes(p.status);
-      const matchesCareer    = this.selectedCareers().length === 0 || this.selectedCareers().includes(p.career) || p.career === 'Todas';
-      const matchesPrice     = p.price <= this.priceRange();
+    let result = this.productsSignal().filter(p => {
+      const matchesSearch   = p.title.toLowerCase().includes(this.searchQuery().toLowerCase());
+      const matchesMaterial = this.selectedMaterials().length === 0 || this.selectedMaterials().includes(p.category);
+      const matchesModality = this.selectedModalities().length === 0 || this.selectedModalities().includes(p.status);
+      const matchesCareer   = this.selectedCareers().length === 0 || this.selectedCareers().includes(p.career) || p.career === 'Todas';
+      const matchesPrice    = p.price <= this.priceRange();
       return matchesSearch && matchesMaterial && matchesModality && matchesCareer && matchesPrice;
     });
+
     if (this.showFavoritesOnly()) {
       result = result.filter(p => this.favorites().includes(p.id));
     }
     return result;
   });
 
-  pagedProducts = computed(() => {
-    const all   = this.filteredProducts();
-    const start = (this.currentPage() - 1) * this.itemsPerPage;
+  pagedProducts = computed(() => this.filteredProducts());
+
+  totalPages = computed(() => this.totalPagesFromServer());
+
+  pagedMyProducts = computed(() => {
+    const all   = this.myProductsSignal();
+    const start = (this.currentMyPage() - 1) * this.itemsPerPage;
     return all.slice(start, start + this.itemsPerPage);
   });
 
-  totalPages = computed(() =>
-    Math.ceil(this.filteredProducts().length / this.itemsPerPage)
+  totalMyPages = computed(() =>
+    Math.ceil(this.myProductsSignal().length / this.itemsPerPage)
   );
+
+  isMyProduct = computed(() => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    return (product: Product) => product.ownerId === Number(currentUser?.idUser);
+  });
+
+  getStatusBg(status: string): string  { return this.statusColors[status]?.bg   ?? 'bg-gray-100'; }
+  getStatusText(status: string): string { return this.statusColors[status]?.text ?? 'text-gray-700'; }
 
   toggleFavorite(event: Event, id: number) {
     event.stopPropagation();
@@ -160,6 +227,8 @@ export class HomeComponent {
               : type === 'modality' ? this.selectedModalities
               : this.selectedCareers;
     sig.update(v => v.includes(value) ? v.filter(i => i !== value) : [...v, value]);
+    this.currentPage.set(1);
+    this.loadProducts();
   }
 
   openDetail(product: Product) {
@@ -173,7 +242,14 @@ export class HomeComponent {
   }
 
   setPage(page: number) {
+    if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
+    this.loadProducts();
+  }
+
+  setMyPage(page: number) {
+    if (page < 1 || page > this.totalMyPages()) return;
+    this.currentMyPage.set(page);
   }
 
   openAddDialog() {
@@ -184,40 +260,114 @@ export class HomeComponent {
   closeAddDialog() {
     this.isAddDialogOpen.set(false);
     this.imagePreviewUrl.set('');
-    this.newProduct.set({ title: '', image: '', status: 'Venta', price: '', condition: 'Usado', category: '', career: '', tags: [] });
+    this.newProduct.set({
+      title: '', description: '', image: '',
+      status: 'Venta', price: '', condition: 'Usado',
+      category: '', career: '', tags: []
+    });
     document.body.style.overflow = 'auto';
   }
 
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
+
     const file = input.files[0];
+
+    // Mostrar preview local inmediatamente
     const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      this.imagePreviewUrl.set(dataUrl);
-      this.newProduct.update(p => ({ ...p, image: dataUrl }));
-    };
+    reader.onload = () => this.imagePreviewUrl.set(reader.result as string);
     reader.readAsDataURL(file);
-  }
 
-  clearImage() {
-    this.imagePreviewUrl.set('');
-    this.newProduct.update(p => ({ ...p, image: '' }));
-  }
+    // Subir imagen al servidor y guardar solo la ruta
+    this.isUploadingImage.set(true);
+    const formData = new FormData();
+    formData.append('image', file);
 
-  setNewProductField(field: string, value: string) {
-    this.newProduct.update(p => ({ ...p, [field]: value }));
-  }
-
-  onTagsChange(raw: string) {
-    const tags = raw.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    this.newProduct.update(p => ({ ...p, tags }));
+    this.productService.uploadImage(formData).subscribe({
+      next: (res: any) => {
+        this.isUploadingImage.set(false);
+        this.newProduct.update(p => ({ ...p, image: res.imageUrl }));
+      },
+      error: () => {
+        this.isUploadingImage.set(false);
+        alert('Error al subir la imagen. Intenta de nuevo.');
+        this.clearImage();
+      }
+    });
   }
 
   publishProduct() {
-    const np = this.newProduct();
-    console.log('Nuevo producto:', np);
-    this.closeAddDialog();
+    const p = this.newProduct();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+    if (!p.title.trim())       { alert('El título es obligatorio.');       return; }
+    if (!p.description.trim()) { alert('La descripción es obligatoria.');  return; }
+    if (!p.category)           { alert('Selecciona una categoría.');       return; }
+    if (!p.condition)          { alert('Selecciona una condición.');       return; }
+    if (this.isUploadingImage()) { alert('Espera a que la imagen termine de subirse.'); return; }
+
+    const idModality  = MODALITY_MAP[p.status];
+    const idCategory  = CATEGORY_MAP[p.category];
+    const idCondition = CONDITION_MAP[p.condition];
+
+    if (!idModality || !idCategory || !idCondition) {
+      alert('Datos inválidos. Verifica modalidad, categoría y condición.');
+      return;
+    }
+
+    const payload = {
+      idProduct:   null,
+      productName: p.title.trim(),
+      description: p.description.trim(),
+      price:       p.price ? parseFloat(p.price) : 0,
+      idModality,
+      idCondition,
+      idCategory,
+      idStatus:    1,
+      idUser:      currentUser.idUser,
+      images:      p.image ? [{ imageUrl: p.image }] : []
+    };
+
+    this.isSaving.set(true);
+
+    this.productService.saveProduct(payload).subscribe({
+      next: (response: any) => {
+        this.isSaving.set(false);
+
+        if (response?.ok === false) {
+          alert('Error al publicar: ' + (response.message || 'Error desconocido'));
+          return;
+        }
+
+        const newMapped: Product = {
+          id: response?.data?.idProduct ?? Date.now(),
+          title: p.title.trim(),
+          image: p.image || 'assets/productos/default.jpg',
+          status: p.status,
+          price: p.price ? parseFloat(p.price) : 0,
+          tags: [p.category, p.condition].filter(Boolean),
+          category: p.category,
+          career: p.career || 'Todas',
+          description: p.description.trim(),
+          owner: `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim(),
+          ownerId: currentUser.idUser,
+          views: 0,
+          savedBy: 0,
+          messages: 0
+        };
+
+        this.productsSignal.update(list => [newMapped, ...list]);
+        this.myProductsSignal.update(list => [newMapped, ...list]);
+
+        this.closeAddDialog();
+        this.loadProducts();
+      },
+      error: (err: any) => {
+        this.isSaving.set(false);
+        console.error('Error al publicar producto:', err);
+        alert('No se pudo conectar con el servidor.');
+      }
+    });
   }
 }

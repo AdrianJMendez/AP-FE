@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
+
 export class LoginComponent {
   // Inyección de dependencias moderna con 'inject'
   private fb = inject(FormBuilder);
@@ -31,53 +32,41 @@ export class LoginComponent {
   get email() { return this.loginForm.get('email'); }
   get password() { return this.loginForm.get('password'); }
 
-  onSubmit(): void {
-    // 1. Validar formulario localmente
-    if (this.loginForm.invalid) {
-      this.error.set('Por favor completa correctamente el formulario.');
-      return;
-    }
-
-    this.loading.set(true);
-    this.error.set(null);
-
-    const { email, password } = this.loginForm.value;
-
-    // 2. Llamada real al servicio de autenticación
-    this.authService.login(email, password).subscribe({
-      next: (response: any) => {
-        this.loading.set(false);
-
-        // Verificamos si el Procedimiento Almacenado indica éxito
-        if (response && !response.hasError) {
-          // Extraemos el ID o generamos un token provisional para la sesión
-          const userId = response.data?.idUser || 'default';
-          this.authService.setToken(`PUMA_TOKEN_${userId}`);
-          
-          console.log('Login exitoso:', response.meta[0]?.message);
-          
-          // Redirección al Home
-          this.router.navigate(['/home']);
-        } else {
-          // El servidor respondió 200 pero con error de credenciales en el body
-          const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
-          this.error.set(msg);
-        }
-      },
-      error: (err) => {
-        this.loading.set(false);
-        
-        // Manejo de errores HTTP (401, 500, o servidor apagado)
-        if (err.status === 401) {
-          // Error controlado desde el Backend (Credenciales mal)
-          const msg = err.error?.meta?.[0]?.message || 'Credenciales no válidas.';
-          this.error.set(msg);
-        } else {
-          // Error de red o servidor caído
-          this.error.set('Error de conexión con el servidor. Verifica que el Backend esté activo.');
-        }
-        console.error('Detalle del error:', err);
-      }
-    });
+ onSubmit(): void {
+  if (this.loginForm.invalid) {
+    this.error.set('Por favor completa correctamente el formulario.');
+    return;
   }
-}
+
+  this.loading.set(true);
+  this.error.set(null);
+
+  const { email, password } = this.loginForm.value;
+
+  this.authService.login(email, password).subscribe({
+  next: (response: any) => {
+    this.loading.set(false);
+    console.log('Respuesta recibida:', response);
+
+    // CAMBIO AQUÍ: Si recibimos un objeto con idUser, el login fue un éxito
+    if (response && response.idUser) {
+      
+      // Guardamos al usuario directamente (porque response YA es el usuario)
+      localStorage.setItem('currentUser', JSON.stringify(response));
+      
+      // Generamos el token con el ID que ya vimos que es el 5
+      this.authService.setToken(`PUMA_TOKEN_${response.idUser}`);
+      
+      console.log('¡Acceso concedido! Navegando...');
+      this.router.navigate(['/home']);
+    } else {
+      this.error.set('No se pudo procesar la información del usuario.');
+    }
+  },
+  error: (err) => {
+    this.loading.set(false);
+    this.error.set('Usuario o contraseña incorrectos.');
+    console.error('Error HTTP:', err);
+  }
+});
+}}
