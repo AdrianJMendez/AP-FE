@@ -19,13 +19,25 @@
           </span>
         </button>
 
-        <div class="flex items-center gap-2 pl-4 border-l border-blue-400">
-          <div class="w-9 h-9 bg-blue-800 rounded-full flex items-center justify-center border border-blue-300">
+
+        <button (click)="openMessagesModal()"
+                class="relative p-2 rounded-xl transition-all hover:scale-110">
+          <lucide-icon [name]="MessageCircle" class="w-6 h-6"></lucide-icon>
+          <span class="absolute -top-1 -right-1 bg-yellow-400 text-[10px] font-bold text-gray-800 rounded-full w-5 h-5
+                       flex items-center justify-center border-2 border-[#2E4C9E]">
+            {{ chats().length }}
+          </span>
+        </button>
+
+
+        <div class="flex items-center gap-2 pl-4 border-l border-blue-400 cursor-pointer"
+             (click)="openProfileModal()">
+          <div class="w-9 h-9 bg-blue-800 rounded-full flex items-center justify-center border border-blue-300 hover:bg-blue-700 transition-colors">
             <lucide-icon [name]="User" class="w-5 h-5"></lucide-icon>
           </div>
           <div class="hidden md:flex flex-col">
-            <span class="text-xs font-semibold uppercase">André López</span>
-            <span class="text-[10px] text-blue-200">20191000412</span>
+            <span class="text-xs font-semibold uppercase">{{ currentUserName() }}</span>
+            <span class="text-[10px] text-blue-200">{{ currentUserAccount() }}</span>
           </div>
         </div>
       </div>
@@ -132,7 +144,7 @@
         </div>
       </div>
 
-      <!-- TAB: CATÁLOGO GENERAL -->
+
       @if (activeTab() === 'todos') {
 
         @if (viewMode() === 'grid') {
@@ -165,7 +177,8 @@
                     <span class="text-xl font-black text-[#2E4C9E]">
                       {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                     </span>
-                    <button class="p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
+                    <button (click)="openChatFromProduct(product, $event)"
+                            class="p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
                       <lucide-icon [name]="MessageCircle" class="w-5 h-5"></lucide-icon>
                     </button>
                   </div>
@@ -208,7 +221,8 @@
                                      [class.fav-inactive]="!favorites().includes(product.id)"
                                      class="w-5 h-5"></lucide-icon>
                       </button>
-                      <button class="p-2.5 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
+                      <button (click)="openChatFromProduct(product, $event)"
+                              class="p-2.5 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
                         <lucide-icon [name]="MessageCircle" class="w-5 h-5"></lucide-icon>
                       </button>
                     </div>
@@ -219,7 +233,6 @@
           </div>
         }
 
-        <!-- Paginación Catálogo General -->
         @if (totalPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
             <button (click)="setPage(currentPage() - 1)"
@@ -248,7 +261,7 @@
         }
       }
 
-      <!-- TAB: MIS PUBLICACIONES -->
+
       @if (activeTab() === 'mis') {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           @for (product of pagedMyProducts(); track product.id) {
@@ -293,7 +306,7 @@
           }
         </div>
 
-        <!-- Paginación Mis Publicaciones -->
+
         @if (totalMyPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
             <button (click)="setMyPage(currentMyPage() - 1)"
@@ -438,7 +451,7 @@
           }
 
           <div class="flex gap-2 mt-auto pt-3">
-            <button class="modal-action-btn">
+            <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
               <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
               CONTACTAR
             </button>
@@ -456,6 +469,7 @@
     </div>
   </div>
 }
+
 
 @if (isAddDialogOpen()) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
@@ -477,7 +491,7 @@
 
       <div class="p-8 overflow-y-auto flex-1 space-y-5">
 
-        <!-- Título -->
+
         <div class="form-group">
           <label class="form-label">Título *</label>
           <input [ngModel]="newProduct().title"
@@ -486,7 +500,7 @@
                  class="form-input" />
         </div>
 
-        <!-- Descripción -->
+
         <div class="form-group">
           <label class="form-label">Descripción *</label>
           <textarea [ngModel]="newProduct().description"
@@ -496,27 +510,24 @@
                     class="form-input resize-none"></textarea>
         </div>
 
-        <!-- Imágenes (máx. 2) -->
+
         <div class="form-group">
           <label class="form-label">
             Imágenes del producto
             <span class="text-gray-400 font-normal">(máx. 2)</span>
           </label>
 
-          <!-- Previews de imágenes ya cargadas -->
           @if (imagePreviews().length > 0) {
             <div class="grid grid-cols-2 gap-3 mb-3">
               @for (preview of imagePreviews(); track $index) {
                 <div class="relative group">
                   <img [src]="preview" alt="Preview {{ $index + 1 }}"
                        class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
-                  <!-- Spinner mientras sube -->
                   @if (!imageUrls()[$index]) {
                     <div class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
                       <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   }
-                  <!-- Botón eliminar -->
                   <button (click)="clearImageAt($index)"
                           class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow
                                  opacity-0 group-hover:opacity-100 transition-opacity">
@@ -527,7 +538,6 @@
             </div>
           }
 
-          <!-- Botón de agregar imagen (solo si hay menos de 2) -->
           @if (imagePreviews().length < 2) {
             <label class="file-upload-area" for="fileInput">
               <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
@@ -543,7 +553,6 @@
         </div>
 
 
-        <!-- Modalidad -->
         <div class="form-group">
           <label class="form-label">Modalidad *</label>
           <select [ngModel]="newProduct().status"
@@ -555,7 +564,6 @@
           </select>
         </div>
 
-        <!-- Precio (solo Venta e Intercambio) -->
         @if (newProduct().status === 'Venta' || newProduct().status === 'Intercambio') {
           <div class="form-group">
             <label class="form-label">Precio (L.)</label>
@@ -566,7 +574,6 @@
           </div>
         }
 
-        <!-- Categoría -->
         <div class="form-group">
           <label class="form-label">Categoría *</label>
           <select [ngModel]="newProduct().category"
@@ -585,7 +592,7 @@
           </select>
         </div>
 
-        <!-- Condición -->
+
         <div class="form-group">
           <label class="form-label">Condición *</label>
           <select [ngModel]="newProduct().condition"
@@ -596,7 +603,6 @@
           </select>
         </div>
 
-        <!-- Carrera -->
         <div class="form-group">
           <label class="form-label">Carrera *</label>
           <select [ngModel]="newProduct().career"
@@ -613,7 +619,7 @@
           </select>
         </div>
 
-        <!-- Etiquetas -->
+
         <div class="form-group">
           <label class="form-label">Etiquetas (separadas por coma)</label>
           <input type="text"
@@ -646,6 +652,216 @@
         </button>
       </div>
 
+    </div>
+  </div>
+}
+
+
+
+@if (isProfileOpen()) {
+  <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div (click)="closeProfileModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+    <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden">
+
+
+      <div class="h-24 bg-[#2E4C9E] relative">
+        <button (click)="closeProfileModal()"
+                class="absolute top-4 right-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
+          <lucide-icon [name]="X" class="w-4 h-4 text-white"></lucide-icon>
+        </button>
+      </div>
+
+      
+      <div class="flex justify-center -mt-10 mb-4 relative z-10">
+        <div class="w-20 h-20 rounded-full bg-[#17a2b8] flex items-center justify-center ring-4 ring-white shadow-lg">
+          <lucide-icon [name]="User" class="w-10 h-10 text-white"></lucide-icon>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6">
+      
+        <div class="text-center mb-5">
+          <h2 class="text-xl font-bold text-gray-900">{{ currentUserName() }}</h2>
+          <p class="text-sm text-gray-500 mt-1">{{ currentUserEmail() }}</p>
+          <p class="text-sm text-gray-500">Ingeniería en Sistemas</p>
+        </div>
+
+        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+          <h3 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Sobre mí</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Estudiante universitario apasionado por compartir materiales académicos y apoyar a la comunidad UNAH.
+          </p>
+        </div>
+
+     
+        <div class="grid grid-cols-2 gap-3 mb-5">
+          <div class="bg-[#17a2b8] text-white rounded-2xl p-4 text-center">
+            <p class="text-2xl font-black">{{ myProductsSignal().length }}</p>
+            <p class="text-xs mt-1 opacity-90">Publicaciones</p>
+          </div>
+          <div class="bg-[#17a2b8] text-white rounded-2xl p-4 text-center">
+            <p class="text-2xl font-black">0</p>
+            <p class="text-xs mt-1 opacity-90">Intercambios</p>
+          </div>
+        </div>
+
+ 
+        <button (click)="logout()"
+                class="w-full py-3 rounded-2xl bg-[#dc3545] hover:bg-[#c82333] text-white
+                       font-bold text-sm transition-colors flex items-center justify-center gap-2">
+          <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
+          Cerrar sesión
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+
+@if (isMessagesOpen()) {
+  <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div (click)="closeMessagesModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden"
+         style="height: 580px;">
+
+      <div class="grid h-full" style="grid-template-columns: 280px 1fr;">
+
+     
+        <div class="border-r flex flex-col h-full">
+
+          <div class="p-4 border-b bg-white">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="font-black text-gray-900 text-lg">Chats</h2>
+              <button (click)="closeMessagesModal()"
+                      class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+                <lucide-icon [name]="X" class="w-4 h-4 text-gray-600"></lucide-icon>
+              </button>
+            </div>
+            <div class="relative">
+              <lucide-icon [name]="Search"
+                           class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
+              <input [ngModel]="chatSearch()"
+                     (ngModelChange)="chatSearch.set($event)"
+                     type="text"
+                     placeholder="Buscar conversaciones..."
+                     class="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200
+                            rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto">
+            @if (isLoadingChats()) {
+              <div class="p-4 text-sm text-gray-400">Cargando conversaciones...</div>
+            } @else if (filteredChats().length === 0) {
+              <div class="p-4 text-sm text-gray-400">Aún no tienes conversaciones.</div>
+            } @else {
+              @for (chat of filteredChats(); track chat.idConversation) {
+                <div (click)="selectChat(chat)"
+                     class="p-4 border-b cursor-pointer transition-colors hover:bg-gray-50"
+                     [class.bg-blue-50]="selectedChat()?.idConversation === chat.idConversation">
+                  <div class="flex items-start gap-3">
+                    <div class="relative flex-shrink-0">
+                      <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
+                        <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
+                      </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between mb-0.5">
+                        <span class="font-semibold text-sm text-gray-800 truncate">{{ chat.otherUserName }}</span>
+                        <span class="text-[11px] text-gray-400 flex-shrink-0 ml-1">{{ getChatPreviewTime(chat.lastMessageAt) }}</span>
+                      </div>
+                      <p class="text-[11px] text-gray-400 truncate mb-1">{{ chat.productName }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ chat.lastMessage || 'Escribe el primer mensaje' }}</p>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          
+          <div class="p-3 bg-gray-50 border-t">
+            <p class="text-[11px] text-gray-500 flex items-center gap-1.5">
+              {{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}
+            </p>
+          </div>
+        </div>
+
+        
+        <div class="flex flex-col h-full bg-gray-50">
+
+          @if (selectedChat()) {
+           
+            <div class="flex items-center gap-3 px-5 py-4 bg-white border-b shadow-sm">
+              <div class="relative">
+                <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
+                  <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
+                </div>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900 text-sm">{{ selectedChat()!.otherUserName }}</p>
+                <p class="text-[11px] text-gray-400">{{ selectedChat()!.productName }}</p>
+              </div>
+            </div>
+
+           
+            <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              @if (isLoadingMessages()) {
+                <p class="text-sm text-gray-400">Cargando mensajes...</p>
+              } @else if (chatMessages().length === 0) {
+                <p class="text-sm text-gray-400">Esta conversación todavía no tiene mensajes.</p>
+              } @else {
+                @for (msg of chatMessages(); track msg.idMessage) {
+                  <div class="flex" [class.justify-end]="isMine(msg)" [class.justify-start]="!isMine(msg)">
+                  <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
+                       [class.bg-[#2E4C9E]]="isMine(msg)"
+                       [class.text-white]="isMine(msg)"
+                       [class.rounded-br-sm]="isMine(msg)"
+                       [class.bg-white]="!isMine(msg)"
+                       [class.text-gray-800]="!isMine(msg)"
+                       [class.rounded-bl-sm]="!isMine(msg)">
+                    <p>{{ msg.messageText }}</p>
+                    <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                  </div>
+                </div>
+                }
+              }
+            </div>
+
+            <div class="px-4 py-3 bg-white border-t flex items-center gap-3">
+              <input [ngModel]="newMessage()"
+                     (ngModelChange)="newMessage.set($event)"
+                     (keydown.enter)="sendMessage()"
+                     type="text"
+                     placeholder="Escribe un mensaje..."
+                     class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
+                            outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
+              <button (click)="sendMessage()"
+                      [disabled]="!newMessage().trim() || !isSocketConnected()"
+                      class="p-2.5 bg-[#2E4C9E] text-white rounded-xl hover:bg-blue-800
+                             disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-md">
+                <lucide-icon [name]="Send" class="w-5 h-5"></lucide-icon>
+              </button>
+            </div>
+
+          } @else {
+           
+            <div class="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div class="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <lucide-icon [name]="MessageCircle" class="w-10 h-10 text-[#2E4C9E]"></lucide-icon>
+              </div>
+              <h3 class="text-base font-bold text-gray-700 mb-2">Abre un chat</h3>
+              <p class="text-sm text-gray-400 max-w-xs">
+                Selecciona una conversación para comenzar a chatear
+              </p>
+            </div>
+          }
+        </div>
+
+      </div>
     </div>
   </div>
 }

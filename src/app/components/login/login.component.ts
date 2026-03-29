@@ -55,7 +55,7 @@ export class LoginComponent {
         
         this.authService.setToken(`PUMA_TOKEN_${userId}`);
         
-        console.log('Login exitoso:', response.meta[0]?.message);
+        console.log('Login exitoso:', response.meta?.[0]?.message);
         this.router.navigate(['/home']);
       } else {
         const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
