@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{html,ts}", // ESTA LÍNEA ES VITAL
+    "./src/**/*.{html,ts}", 
   ],
   theme: {
     extend: {},
