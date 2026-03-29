@@ -25,7 +25,7 @@
           <lucide-icon [name]="MessageCircle" class="w-6 h-6"></lucide-icon>
           <span class="absolute -top-1 -right-1 bg-yellow-400 text-[10px] font-bold text-gray-800 rounded-full w-5 h-5
                        flex items-center justify-center border-2 border-[#2E4C9E]">
-            5
+            {{ chats().length }}
           </span>
         </button>
 
@@ -177,7 +177,8 @@
                     <span class="text-xl font-black text-[#2E4C9E]">
                       {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                     </span>
-                    <button class="p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
+                    <button (click)="openChatFromProduct(product, $event)"
+                            class="p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
                       <lucide-icon [name]="MessageCircle" class="w-5 h-5"></lucide-icon>
                     </button>
                   </div>
@@ -220,7 +221,8 @@
                                      [class.fav-inactive]="!favorites().includes(product.id)"
                                      class="w-5 h-5"></lucide-icon>
                       </button>
-                      <button class="p-2.5 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
+                      <button (click)="openChatFromProduct(product, $event)"
+                              class="p-2.5 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
                         <lucide-icon [name]="MessageCircle" class="w-5 h-5"></lucide-icon>
                       </button>
                     </div>
@@ -449,7 +451,7 @@
           }
 
           <div class="flex gap-2 mt-auto pt-3">
-            <button class="modal-action-btn">
+            <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
               <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
               CONTACTAR
             </button>
@@ -751,36 +753,39 @@
           </div>
 
           <div class="flex-1 overflow-y-auto">
-            @for (chat of filteredChats(); track chat.id) {
-              <div (click)="selectChat(chat)"
-                   class="p-4 border-b cursor-pointer transition-colors hover:bg-gray-50"
-                   [class.bg-blue-50]="selectedChat()?.id === chat.id">
-                <div class="flex items-start gap-3">
-                  <div class="relative flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
-                      <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
+            @if (isLoadingChats()) {
+              <div class="p-4 text-sm text-gray-400">Cargando conversaciones...</div>
+            } @else if (filteredChats().length === 0) {
+              <div class="p-4 text-sm text-gray-400">Aún no tienes conversaciones.</div>
+            } @else {
+              @for (chat of filteredChats(); track chat.idConversation) {
+                <div (click)="selectChat(chat)"
+                     class="p-4 border-b cursor-pointer transition-colors hover:bg-gray-50"
+                     [class.bg-blue-50]="selectedChat()?.idConversation === chat.idConversation">
+                  <div class="flex items-start gap-3">
+                    <div class="relative flex-shrink-0">
+                      <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
+                        <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
+                      </div>
                     </div>
-                    @if (chat.online) {
-                      <span class="absolute bottom-0 right-0 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-white"></span>
-                    }
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between mb-0.5">
-                      <span class="font-semibold text-sm text-gray-800 truncate">{{ chat.name }}</span>
-                      <span class="text-[11px] text-gray-400 flex-shrink-0 ml-1">{{ chat.time }}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between mb-0.5">
+                        <span class="font-semibold text-sm text-gray-800 truncate">{{ chat.otherUserName }}</span>
+                        <span class="text-[11px] text-gray-400 flex-shrink-0 ml-1">{{ getChatPreviewTime(chat.lastMessageAt) }}</span>
+                      </div>
+                      <p class="text-[11px] text-gray-400 truncate mb-1">{{ chat.productName }}</p>
+                      <p class="text-xs text-gray-500 truncate">{{ chat.lastMessage || 'Escribe el primer mensaje' }}</p>
                     </div>
-                    <p class="text-xs text-gray-500 truncate">{{ chat.lastMessage }}</p>
                   </div>
                 </div>
-              </div>
+              }
             }
           </div>
 
           
           <div class="p-3 bg-gray-50 border-t">
             <p class="text-[11px] text-gray-500 flex items-center gap-1.5">
-             
-              Conversaciones cifradas de extremo a extremo
+              {{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}
             </p>
           </div>
         </div>
@@ -795,31 +800,34 @@
                 <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
                   <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
                 </div>
-                @if (selectedChat()!.online) {
-                  <span class="absolute bottom-0 right-0 w-3 h-3 bg-yellow-400 rounded-full ring-2 ring-white"></span>
-                }
               </div>
               <div>
-                <p class="font-bold text-gray-900 text-sm">{{ selectedChat()!.name }}</p>
-                <p class="text-[11px] text-gray-400">{{ selectedChat()!.online ? 'En línea' : 'Desconectado' }}</p>
+                <p class="font-bold text-gray-900 text-sm">{{ selectedChat()!.otherUserName }}</p>
+                <p class="text-[11px] text-gray-400">{{ selectedChat()!.productName }}</p>
               </div>
             </div>
 
            
             <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-              @for (msg of selectedChat()!.messages; track $index) {
-                <div class="flex" [class.justify-end]="msg.mine" [class.justify-start]="!msg.mine">
+              @if (isLoadingMessages()) {
+                <p class="text-sm text-gray-400">Cargando mensajes...</p>
+              } @else if (chatMessages().length === 0) {
+                <p class="text-sm text-gray-400">Esta conversación todavía no tiene mensajes.</p>
+              } @else {
+                @for (msg of chatMessages(); track msg.idMessage) {
+                  <div class="flex" [class.justify-end]="isMine(msg)" [class.justify-start]="!isMine(msg)">
                   <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
-                       [class.bg-[#2E4C9E]]="msg.mine"
-                       [class.text-white]="msg.mine"
-                       [class.rounded-br-sm]="msg.mine"
-                       [class.bg-white]="!msg.mine"
-                       [class.text-gray-800]="!msg.mine"
-                       [class.rounded-bl-sm]="!msg.mine">
-                    <p>{{ msg.text }}</p>
-                    <p class="text-[10px] mt-1 opacity-60 text-right">{{ msg.time }}</p>
+                       [class.bg-[#2E4C9E]]="isMine(msg)"
+                       [class.text-white]="isMine(msg)"
+                       [class.rounded-br-sm]="isMine(msg)"
+                       [class.bg-white]="!isMine(msg)"
+                       [class.text-gray-800]="!isMine(msg)"
+                       [class.rounded-bl-sm]="!isMine(msg)">
+                    <p>{{ msg.messageText }}</p>
+                    <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
                   </div>
                 </div>
+                }
               }
             </div>
 
@@ -832,7 +840,7 @@
                      class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
                             outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
               <button (click)="sendMessage()"
-                      [disabled]="!newMessage().trim()"
+                      [disabled]="!newMessage().trim() || !isSocketConnected()"
                       class="p-2.5 bg-[#2E4C9E] text-white rounded-xl hover:bg-blue-800
                              disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-md">
                 <lucide-icon [name]="Send" class="w-5 h-5"></lucide-icon>

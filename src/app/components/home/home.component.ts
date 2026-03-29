@@ -1,8 +1,23 @@
-import { Component, signal, computed, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  signal
+} from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ProductService } from '../../services/product.service';
+import {
+  ChatConversation,
+  ChatMessage,
+  ChatService
+} from '../../services/chat.service';
+import { ChatSocketService } from '../../services/chat-socket.service';
 import {
   LucideAngularModule,
   Search,
@@ -38,42 +53,27 @@ interface Product {
   ownerId?: number;
 }
 
-interface ChatMessage {
-  text: string;
-  time: string;
-  mine: boolean;
-}
-
-interface Chat {
-  id: number;
-  name: string;
-  lastMessage: string;
-  time: string;
-  online: boolean;
-  messages: ChatMessage[];
-}
-
 const MODALITY_MAP: Record<string, number> = {
-  'Venta': 1,
-  'Intercambio': 2,
-  'Donación': 3
+  Venta: 1,
+  Intercambio: 2,
+  Donación: 3
 };
 
 const CATEGORY_MAP: Record<string, number> = {
-  'Tecnología': 1,
+  Tecnología: 1,
   'Libros y Material Académico': 2,
-  'Uniformes': 3,
-  'Electrodomésticos': 4,
+  Uniformes: 3,
+  Electrodomésticos: 4,
   'Ropa y Accesorios': 5,
-  'Deportes': 6,
-  'Hogar': 7,
+  Deportes: 6,
+  Hogar: 7,
   'Instrumentos Musicales': 8,
-  'Otros': 9
+  Otros: 9
 };
 
 const CONDITION_MAP: Record<string, number> = {
-  'Nuevo': 1,
-  'Usado': 2
+  Nuevo: 1,
+  Usado: 2
 };
 
 @Component({
@@ -83,12 +83,15 @@ const CONDITION_MAP: Record<string, number> = {
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent implements OnInit {
-  private productService = inject(ProductService);
-  private platformId = inject(PLATFORM_ID);
-  private router = inject(Router);
+export class HomeComponent implements OnInit, OnDestroy {
+  private readonly productService = inject(ProductService);
+  private readonly chatService = inject(ChatService);
+  private readonly chatSocketService = inject(ChatSocketService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly router = inject(Router);
 
-  
+  private chatEventsSubscription?: Subscription;
+
   readonly Search = Search;
   readonly MessageCircle = MessageCircle;
   readonly Heart = Heart;
@@ -120,11 +123,13 @@ export class HomeComponent implements OnInit {
 
   isAddDialogOpen = signal(false);
   imagePreviews = signal<string[]>([]);
-  imageUrls     = signal<string[]>([]);
+  imageUrls = signal<string[]>([]);
   uploadingCount = signal(0);
   isSaving = signal(false);
 
-  get isUploadingImage() { return this.uploadingCount() > 0; }
+  get isUploadingImage() {
+    return this.uploadingCount() > 0;
+  }
 
   newProduct = signal({
     title: '',
@@ -134,7 +139,7 @@ export class HomeComponent implements OnInit {
     condition: 'Usado',
     category: '',
     career: '',
-    tags: [] as string[],
+    tags: [] as string[]
   });
 
   selectedMaterials = signal<string[]>([]);
@@ -145,110 +150,104 @@ export class HomeComponent implements OnInit {
   readonly itemsPerPage = 9;
 
   readonly statusColors: Record<string, { bg: string; text: string }> = {
-    Venta:       { bg: 'bg-green-100',  text: 'text-green-700' },
-    Donación:    { bg: 'bg-blue-100',   text: 'text-blue-700' },
-    Intercambio: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    Venta: { bg: 'bg-green-100', text: 'text-green-700' },
+    Donación: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    Intercambio: { bg: 'bg-yellow-100', text: 'text-yellow-700' }
   };
 
   isProfileOpen = signal(false);
 
   isMessagesOpen = signal(false);
+  isLoadingChats = signal(false);
+  isLoadingMessages = signal(false);
+  isSocketConnected = signal(false);
   chatSearch = signal('');
-  selectedChat = signal<Chat | null>(null);
+  selectedChatId = signal<number | null>(null);
   newMessage = signal('');
-
-  chats = signal<Chat[]>([
-    {
-      id: 1,
-      name: 'Eli Oseguera',
-      lastMessage: 'Perfecto, Gracias 😊',
-      time: '10 min',
-      online: true,
-      messages: [
-        { text: '¿Aún tienes la calculadora disponible?', time: '10:05 am', mine: false },
-        { text: 'Sí, sigue disponible. ¿Te interesa?',   time: '10:06 am', mine: true  },
-        { text: 'Perfecto, Gracias 😊',                   time: '10:08 am', mine: false },
-      ]
-    },
-    {
-      id: 2,
-      name: 'Sofía Hernández',
-      lastMessage: 'Sí, aún lo tengo disponible',
-      time: '10:12 am',
-      online: false,
-      messages: [
-        { text: '¿Tienes el libro de cálculo III?', time: '10:10 am', mine: false },
-        { text: 'Sí, aún lo tengo disponible',      time: '10:12 am', mine: true  },
-      ]
-    },
-    {
-      id: 3,
-      name: 'Kevin López',
-      lastMessage: 'Claro, ¿cuándo los necesitas?',
-      time: '9:49 am',
-      online: false,
-      messages: [
-        { text: '¿Me puedes vender los apuntes de Física II?', time: '9:47 am', mine: false },
-        { text: 'Claro, ¿cuándo los necesitas?',               time: '9:49 am', mine: true  },
-      ]
-    },
-    {
-      id: 4,
-      name: 'Andrea Gómez',
-      lastMessage: 'Te lo dejo en L. 400',
-      time: '8:30 am',
-      online: false,
-      messages: [
-        { text: '¿Cuánto por el uniforme?', time: '8:28 am', mine: false },
-        { text: 'Te lo dejo en L. 400',     time: '8:30 am', mine: true  },
-      ]
-    },
-    {
-      id: 5,
-      name: 'Luis Torres',
-      lastMessage: 'Está en muy buen estado',
-      time: '7:55 am',
-      online: false,
-      messages: [
-        { text: '¿Cómo está la laptop que vendes?', time: '7:53 am', mine: false },
-        { text: 'Está en muy buen estado',           time: '7:55 am', mine: true  },
-      ]
-    },
-  ]);
+  chats = signal<ChatConversation[]>([]);
+  chatMessages = signal<ChatMessage[]>([]);
 
   filteredChats = computed(() => {
-    const q = this.chatSearch().toLowerCase();
-    if (!q) return this.chats();
-    return this.chats().filter(c =>
-      c.name.toLowerCase().includes(q) || c.lastMessage.toLowerCase().includes(q)
-    );
+    const query = this.chatSearch().trim().toLowerCase();
+    const chats = this.chats();
+
+    if (!query) return chats;
+
+    return chats.filter((chat) => {
+      const name = chat.otherUserName.toLowerCase();
+      const lastMessage = (chat.lastMessage || '').toLowerCase();
+      const productName = chat.productName.toLowerCase();
+      return (
+        name.includes(query) ||
+        lastMessage.includes(query) ||
+        productName.includes(query)
+      );
+    });
   });
 
+  selectedChat = computed(
+    () => this.chats().find((chat) => chat.idConversation === this.selectedChatId()) ?? null
+  );
+
   currentUserName = computed(() => {
-    const u = this.getCurrentUser();
-    const name = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim();
+    const user = this.getCurrentUser();
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     return name || 'Usuario';
   });
 
   currentUserAccount = computed(() => {
-    const u = this.getCurrentUser();
-    return u.accountNumber ?? u.idUser?.toString() ?? '';
+    const user = this.getCurrentUser();
+    return user.accountNumber ?? user.idUser?.toString() ?? '';
   });
 
   currentUserEmail = computed(() => {
-    const u = this.getCurrentUser();
-    return u.email ?? '';
+    const user = this.getCurrentUser();
+    return user.email ?? '';
   });
 
- 
   ngOnInit() {
-    if (isPlatformBrowser(this.platformId)) {
-      this.loadProducts();
-    }
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.loadProducts();
+    this.initializeChatConnection();
+  }
+
+  ngOnDestroy() {
+    this.chatEventsSubscription?.unsubscribe();
+    this.chatSocketService.disconnect();
+  }
+
+  private initializeChatConnection() {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.chatEventsSubscription = this.chatSocketService.events$.subscribe((event) => {
+      if (event.type === 'connected') {
+        this.isSocketConnected.set(true);
+        return;
+      }
+
+      if (event.type === 'chat_message' && event.payload) {
+        this.isSocketConnected.set(true);
+        this.applyIncomingMessage(event.payload as ChatMessage);
+        return;
+      }
+
+      if (
+        event.type === 'error' &&
+        event.message &&
+        (event.message.includes('cerró') || event.message.includes('conectar'))
+      ) {
+        this.isSocketConnected.set(false);
+      }
+    });
+
+    this.chatSocketService.connect(userId);
   }
 
   private getCurrentUser(): any {
     if (!isPlatformBrowser(this.platformId)) return {};
+
     try {
       return JSON.parse(localStorage.getItem('currentUser') || '{}');
     } catch {
@@ -256,81 +255,152 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  private getCurrentUserId() {
+    const idUser = Number(this.getCurrentUser()?.idUser);
+    return Number.isFinite(idUser) && idUser > 0 ? idUser : 0;
+  }
+
+  private setBodyScroll(locked: boolean) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    document.body.style.overflow = locked ? 'hidden' : 'auto';
+  }
+
+  private sortChats(chats: ChatConversation[]) {
+    return [...chats].sort((left, right) => {
+      const leftDate = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
+      const rightDate = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
+      return rightDate - leftDate || right.idConversation - left.idConversation;
+    });
+  }
+
+  private upsertConversation(conversation: ChatConversation) {
+    this.chats.update((list) => {
+      const next = list.filter((item) => item.idConversation !== conversation.idConversation);
+      next.unshift(conversation);
+      return this.sortChats(next);
+    });
+  }
+
+  private applyIncomingMessage(message: ChatMessage) {
+    const currentUserId = this.getCurrentUserId();
+    const alreadyLoaded = this.chatMessages().some((item) => item.idMessage === message.idMessage);
+
+    if (this.selectedChatId() === message.idConversation && !alreadyLoaded) {
+      this.chatMessages.update((list) => [...list, message]);
+    }
+
+    const existingConversation = this.chats().find(
+      (conversation) => conversation.idConversation === message.idConversation
+    );
+
+    if (!existingConversation) {
+      this.loadChats(message.idConversation);
+      return;
+    }
+
+    const updatedConversation: ChatConversation = {
+      ...existingConversation,
+      lastMessage: message.messageText,
+      lastMessageAt: message.createdAt
+    };
+
+    this.upsertConversation(updatedConversation);
+
+    if (message.idSenderUser !== currentUserId && !this.isMessagesOpen()) {
+      this.isMessagesOpen.set(true);
+      this.setBodyScroll(true);
+    }
+  }
+
   loadProducts() {
     this.productService.getProducts(this.currentPage()).subscribe({
       next: (response: any) => {
-        const currentUser   = this.getCurrentUser();
-        const rawData       = response.data || [];
+        const currentUser = this.getCurrentUser();
+        const rawData = response.data || [];
         const currentUserId = currentUser?.idUser;
 
         this.totalPagesFromServer.set(response.meta?.[0]?.totalPages ?? 1);
 
-        const mapped: Product[] = rawData.map((p: any) => ({
-          id:          p.idProduct,
-          title:       p.productName,
-          image:       (p.images && p.images.length > 0 && p.images[0].imageUrl)
-                         ? p.images[0].imageUrl
-                         : 'assets/productos/default.jpg',
-          status:      p.modalityName as any,
-          price:       p.price,
-          tags:        [p.categoryName, p.conditionName].filter(Boolean),
-          category:    p.categoryName || 'Otros',
-          career:      'Todas',
-          description: p.description,
-          owner:       `${p.firstName} ${p.lastName}`,
-          ownerId:     Number(p.idUser),
-          views:       Math.floor(Math.random() * 100),
-          savedBy:     Math.floor(Math.random() * 20),
-          messages:    Math.floor(Math.random() * 5)
+        const mapped: Product[] = rawData.map((product: any) => ({
+          id: product.idProduct,
+          title: product.productName,
+          image:
+            product.images && product.images.length > 0 && product.images[0].imageUrl
+              ? product.images[0].imageUrl
+              : 'assets/productos/default.jpg',
+          status: (product.modalityName as Product['status']) ?? 'Venta',
+          price: product.price,
+          tags: [product.categoryName, product.conditionName].filter(Boolean),
+          category: product.categoryName || 'Otros',
+          career: 'Todas',
+          description: product.description,
+          owner: `${product.firstName} ${product.lastName}`.trim(),
+          ownerId: Number(product.idUser),
+          views: Math.floor(Math.random() * 100),
+          savedBy: Math.floor(Math.random() * 20),
+          messages: 0
         }));
 
         const myId = Number(currentUserId);
         this.productsSignal.set(mapped);
-        this.myProductsSignal.set(
-          mapped.filter(p => !isNaN(myId) && p.ownerId === myId)
-        );
+        this.myProductsSignal.set(mapped.filter((product) => !Number.isNaN(myId) && product.ownerId === myId));
       },
       error: (err: any) => console.error('Error al conectar con la API:', err)
     });
   }
 
   setNewProductField(field: string, value: any) {
-    this.newProduct.update(p => ({ ...p, [field]: value }));
+    this.newProduct.update((product) => ({ ...product, [field]: value }));
   }
 
   clearImageAt(index: number) {
-    this.imagePreviews.update(list => list.filter((_, i) => i !== index));
-    this.imageUrls.update(list => list.filter((_, i) => i !== index));
+    this.imagePreviews.update((list) => list.filter((_, position) => position !== index));
+    this.imageUrls.update((list) => list.filter((_, position) => position !== index));
   }
 
   onTagsChange(value: string) {
-    const tags = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    this.newProduct.update(p => ({ ...p, tags }));
+    const tags = value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+
+    this.newProduct.update((product) => ({ ...product, tags }));
   }
 
   filteredProducts = computed(() => {
-    let result = this.productsSignal().filter(p => {
-      const matchesSearch   = p.title.toLowerCase().includes(this.searchQuery().toLowerCase());
-      const matchesMaterial = this.selectedMaterials().length === 0 || this.selectedMaterials().includes(p.category);
-      const matchesModality = this.selectedModalities().length === 0 || this.selectedModalities().includes(p.status);
-      const matchesCareer   = this.selectedCareers().length === 0 || this.selectedCareers().includes(p.career) || p.career === 'Todas';
-      const matchesPrice    = p.price <= this.priceRange();
+    let result = this.productsSignal().filter((product) => {
+      const matchesSearch = product.title
+        .toLowerCase()
+        .includes(this.searchQuery().toLowerCase());
+      const matchesMaterial =
+        this.selectedMaterials().length === 0 ||
+        this.selectedMaterials().includes(product.category);
+      const matchesModality =
+        this.selectedModalities().length === 0 ||
+        this.selectedModalities().includes(product.status);
+      const matchesCareer =
+        this.selectedCareers().length === 0 ||
+        this.selectedCareers().includes(product.career) ||
+        product.career === 'Todas';
+      const matchesPrice = product.price <= this.priceRange();
+
       return matchesSearch && matchesMaterial && matchesModality && matchesCareer && matchesPrice;
     });
 
     if (this.showFavoritesOnly()) {
-      result = result.filter(p => this.favorites().includes(p.id));
+      result = result.filter((product) => this.favorites().includes(product.id));
     }
+
     return result;
   });
 
   pagedProducts = computed(() => this.filteredProducts());
-  totalPages    = computed(() => this.totalPagesFromServer());
+  totalPages = computed(() => this.totalPagesFromServer());
 
   pagedMyProducts = computed(() => {
-    const all   = this.myProductsSignal();
+    const allProducts = this.myProductsSignal();
     const start = (this.currentMyPage() - 1) * this.itemsPerPage;
-    return all.slice(start, start + this.itemsPerPage);
+    return allProducts.slice(start, start + this.itemsPerPage);
   });
 
   totalMyPages = computed(() =>
@@ -338,40 +408,50 @@ export class HomeComponent implements OnInit {
   );
 
   isMyProduct = computed(() => {
-    const myId = Number(this.getCurrentUser()?.idUser);
-    return (product: Product) => !isNaN(myId) && product.ownerId === myId;
+    const myId = this.getCurrentUserId();
+    return (product: Product) => !Number.isNaN(myId) && product.ownerId === myId;
   });
 
+  getStatusBg(status: string): string {
+    return this.statusColors[status]?.bg ?? 'bg-gray-100';
+  }
 
-  getStatusBg(status: string): string   { return this.statusColors[status]?.bg   ?? 'bg-gray-100';   }
-  getStatusText(status: string): string  { return this.statusColors[status]?.text ?? 'text-gray-700'; }
+  getStatusText(status: string): string {
+    return this.statusColors[status]?.text ?? 'text-gray-700';
+  }
 
   toggleFavorite(event: Event, id: number) {
     event.stopPropagation();
     const current = this.favorites();
     this.favorites.set(
-      current.includes(id) ? current.filter(f => f !== id) : [...current, id]
+      current.includes(id) ? current.filter((favoriteId) => favoriteId !== id) : [...current, id]
     );
   }
 
   toggleFilter(type: 'material' | 'modality' | 'career', value: string) {
-    const sig = type === 'material' ? this.selectedMaterials
-              : type === 'modality' ? this.selectedModalities
-              : this.selectedCareers;
-    sig.update(v => v.includes(value) ? v.filter(i => i !== value) : [...v, value]);
+    const targetSignal =
+      type === 'material'
+        ? this.selectedMaterials
+        : type === 'modality'
+          ? this.selectedModalities
+          : this.selectedCareers;
+
+    targetSignal.update((values) =>
+      values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
+    );
+
     this.currentPage.set(1);
     this.loadProducts();
   }
 
-  
   openDetail(product: Product) {
     this.selectedProduct.set(product);
-    document.body.style.overflow = 'hidden';
+    this.setBodyScroll(true);
   }
 
   closeDetail() {
     this.selectedProduct.set(null);
-    document.body.style.overflow = 'auto';
+    this.setBodyScroll(false);
   }
 
   setPage(page: number) {
@@ -387,7 +467,7 @@ export class HomeComponent implements OnInit {
 
   openAddDialog() {
     this.isAddDialogOpen.set(true);
-    document.body.style.overflow = 'hidden';
+    this.setBodyScroll(true);
   }
 
   closeAddDialog() {
@@ -395,11 +475,16 @@ export class HomeComponent implements OnInit {
     this.imagePreviews.set([]);
     this.imageUrls.set([]);
     this.newProduct.set({
-      title: '', description: '',
-      status: 'Venta', price: '', condition: 'Usado',
-      category: '', career: '', tags: []
+      title: '',
+      description: '',
+      status: 'Venta',
+      price: '',
+      condition: 'Usado',
+      category: '',
+      career: '',
+      tags: []
     });
-    document.body.style.overflow = 'auto';
+    this.setBodyScroll(false);
   }
 
   onFileSelected(event: Event) {
@@ -414,28 +499,29 @@ export class HomeComponent implements OnInit {
     }
 
     const file = input.files[0];
-
     const reader = new FileReader();
+
     reader.onload = () => {
-      this.imagePreviews.update(list => [...list, reader.result as string]);
+      this.imagePreviews.update((list) => [...list, reader.result as string]);
     };
+
     reader.readAsDataURL(file);
 
-    this.uploadingCount.update(n => n + 1);
+    this.uploadingCount.update((value) => value + 1);
     const slotIndex = this.imageUrls().length;
 
     this.productService.uploadImage(file).subscribe({
       next: (url: string) => {
-        this.uploadingCount.update(n => n - 1);
-        this.imageUrls.update(list => {
-          const copy = [...list];
-          copy[slotIndex] = url;
-          return copy;
+        this.uploadingCount.update((value) => value - 1);
+        this.imageUrls.update((list) => {
+          const next = [...list];
+          next[slotIndex] = url;
+          return next;
         });
       },
       error: () => {
-        this.uploadingCount.update(n => n - 1);
-        this.imagePreviews.update(list => list.slice(0, -1));
+        this.uploadingCount.update((value) => value - 1);
+        this.imagePreviews.update((list) => list.slice(0, -1));
         alert('Error al subir la imagen. Intenta de nuevo.');
       }
     });
@@ -444,18 +530,37 @@ export class HomeComponent implements OnInit {
   }
 
   publishProduct() {
-    const p           = this.newProduct();
+    const product = this.newProduct();
     const currentUser = this.getCurrentUser();
 
-    if (!p.title.trim())       { alert('El título es obligatorio.');      return; }
-    if (!p.description.trim()) { alert('La descripción es obligatoria.'); return; }
-    if (!p.category)           { alert('Selecciona una categoría.');      return; }
-    if (!p.condition)          { alert('Selecciona una condición.');      return; }
-    if (this.isUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
+    if (!product.title.trim()) {
+      alert('El título es obligatorio.');
+      return;
+    }
 
-    const idModality  = MODALITY_MAP[p.status];
-    const idCategory  = CATEGORY_MAP[p.category];
-    const idCondition = CONDITION_MAP[p.condition];
+    if (!product.description.trim()) {
+      alert('La descripción es obligatoria.');
+      return;
+    }
+
+    if (!product.category) {
+      alert('Selecciona una categoría.');
+      return;
+    }
+
+    if (!product.condition) {
+      alert('Selecciona una condición.');
+      return;
+    }
+
+    if (this.isUploadingImage) {
+      alert('Espera a que las imágenes terminen de subirse.');
+      return;
+    }
+
+    const idModality = MODALITY_MAP[product.status];
+    const idCategory = CATEGORY_MAP[product.category];
+    const idCondition = CONDITION_MAP[product.condition];
 
     if (!idModality || !idCategory || !idCondition) {
       alert('Datos inválidos. Verifica modalidad, categoría y condición.');
@@ -463,16 +568,16 @@ export class HomeComponent implements OnInit {
     }
 
     const payload = {
-      idProduct:   null,
-      productName: p.title.trim(),
-      description: p.description.trim(),
-      price:       p.price ? parseFloat(p.price) : 0,
+      idProduct: null,
+      productName: product.title.trim(),
+      description: product.description.trim(),
+      price: product.price ? parseFloat(product.price) : 0,
       idModality,
       idCondition,
       idCategory,
-      idStatus:    1,
-      idUser:      currentUser.idUser,
-      images:      this.imageUrls().map(url => ({ imageUrl: url }))
+      idStatus: 1,
+      idUser: currentUser.idUser,
+      images: this.imageUrls().map((url) => ({ imageUrl: url }))
     };
 
     this.isSaving.set(true);
@@ -482,29 +587,29 @@ export class HomeComponent implements OnInit {
         this.isSaving.set(false);
 
         if (response?.ok === false) {
-          alert('Error al publicar: ' + (response.message || 'Error desconocido'));
+          alert(`Error al publicar: ${response.message || 'Error desconocido'}`);
           return;
         }
 
         const newMapped: Product = {
-          id:          response?.data?.idProduct ?? Date.now(),
-          title:       p.title.trim(),
-          image:       this.imageUrls()[0] || 'assets/productos/default.jpg',
-          status:      p.status,
-          price:       p.price ? parseFloat(p.price) : 0,
-          tags:        [p.category, p.condition].filter(Boolean),
-          category:    p.category,
-          career:      p.career || 'Todas',
-          description: p.description.trim(),
-          owner:       `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim(),
-          ownerId:     Number(currentUser.idUser),
-          views:    0,
-          savedBy:  0,
+          id: response?.data?.idProduct ?? Date.now(),
+          title: product.title.trim(),
+          image: this.imageUrls()[0] || 'assets/productos/default.jpg',
+          status: product.status,
+          price: product.price ? parseFloat(product.price) : 0,
+          tags: [product.category, product.condition].filter(Boolean),
+          category: product.category,
+          career: product.career || 'Todas',
+          description: product.description.trim(),
+          owner: `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim(),
+          ownerId: Number(currentUser.idUser),
+          views: 0,
+          savedBy: 0,
           messages: 0
         };
 
-        this.productsSignal.update(list => [newMapped, ...list]);
-        this.myProductsSignal.update(list => [newMapped, ...list]);
+        this.productsSignal.update((list) => [newMapped, ...list]);
+        this.myProductsSignal.update((list) => [newMapped, ...list]);
 
         this.closeAddDialog();
         this.loadProducts();
@@ -517,61 +622,182 @@ export class HomeComponent implements OnInit {
     });
   }
 
- 
   openProfileModal() {
     this.isProfileOpen.set(true);
-    document.body.style.overflow = 'hidden';
+    this.setBodyScroll(true);
   }
 
   closeProfileModal() {
     this.isProfileOpen.set(false);
-    document.body.style.overflow = 'auto';
+    this.setBodyScroll(false);
   }
 
   logout() {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('currentUser');
     }
-    this.closeProfileModal();
-    this.router.navigate(['/login']);
-  }
 
+    this.chatSocketService.disconnect();
+    this.closeProfileModal();
+    this.router.navigate(['/']);
+  }
 
   openMessagesModal() {
     this.isMessagesOpen.set(true);
-    document.body.style.overflow = 'hidden';
+    this.setBodyScroll(true);
+    this.loadChats(this.selectedChatId() ?? undefined);
   }
 
   closeMessagesModal() {
     this.isMessagesOpen.set(false);
-    this.selectedChat.set(null);
+    this.selectedChatId.set(null);
+    this.chatMessages.set([]);
     this.newMessage.set('');
-    document.body.style.overflow = 'auto';
+    this.setBodyScroll(false);
   }
 
-  selectChat(chat: Chat) {
-    this.selectedChat.set(chat);
+  loadChats(conversationToSelect?: number) {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.isLoadingChats.set(true);
+
+    this.chatService.getUserConversations(userId).subscribe({
+      next: (response) => {
+        this.isLoadingChats.set(false);
+
+        if (response.hasError) {
+          alert(response.meta?.[0]?.message || 'No se pudieron cargar los chats.');
+          return;
+        }
+
+        const chats = this.sortChats(response.data ?? []);
+        this.chats.set(chats);
+
+        const targetConversationId = conversationToSelect ?? this.selectedChatId();
+        if (!targetConversationId) return;
+
+        const targetConversation = chats.find(
+          (chat) => chat.idConversation === targetConversationId
+        );
+
+        if (targetConversation) {
+          this.selectChat(targetConversation);
+        }
+      },
+      error: (err) => {
+        this.isLoadingChats.set(false);
+        console.error('Error al cargar conversaciones:', err);
+        alert('No se pudieron cargar las conversaciones.');
+      }
+    });
+  }
+
+  selectChat(chat: ChatConversation) {
+    this.selectedChatId.set(chat.idConversation);
     this.newMessage.set('');
+    this.loadMessages(chat.idConversation);
+  }
+
+  loadMessages(idConversation: number) {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.isLoadingMessages.set(true);
+
+    this.chatService.getConversationMessages(idConversation, userId).subscribe({
+      next: (response) => {
+        this.isLoadingMessages.set(false);
+
+        if (response.hasError) {
+          alert(response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.');
+          return;
+        }
+
+        this.chatMessages.set(response.data ?? []);
+      },
+      error: (err) => {
+        this.isLoadingMessages.set(false);
+        console.error('Error al cargar mensajes:', err);
+        alert('No se pudieron cargar los mensajes.');
+      }
+    });
+  }
+
+  openChatFromProduct(product: Product, event?: Event) {
+    event?.stopPropagation();
+
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) {
+      alert('Debes iniciar sesión para contactar al vendedor.');
+      return;
+    }
+
+    if (product.ownerId === currentUserId) {
+      alert('No puedes abrir un chat con tu propia publicación.');
+      return;
+    }
+
+    this.chatService.openConversation(product.id, currentUserId).subscribe({
+      next: (response) => {
+        if (response.hasError) {
+          alert(response.meta?.[0]?.message || 'No se pudo abrir el chat.');
+          return;
+        }
+
+        const conversation = response.data;
+        this.upsertConversation(conversation);
+        this.selectedChatId.set(conversation.idConversation);
+        this.isMessagesOpen.set(true);
+        this.setBodyScroll(true);
+        this.loadChats(conversation.idConversation);
+        this.loadMessages(conversation.idConversation);
+      },
+      error: (err) => {
+        console.error('Error al abrir conversación:', err);
+        alert('No se pudo abrir la conversación.');
+      }
+    });
   }
 
   sendMessage() {
     const text = this.newMessage().trim();
-    if (!text || !this.selectedChat()) return;
+    const selectedChat = this.selectedChat();
 
-    const now  = new Date();
-    const time = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
-    const msg: ChatMessage = { text, time, mine: true };
+    if (!text || !selectedChat) return;
 
-    this.chats.update(list =>
-      list.map(c => {
-        if (c.id !== this.selectedChat()!.id) return c;
-        return { ...c, lastMessage: text, time, messages: [...c.messages, msg] };
-      })
-    );
+    try {
+      this.chatSocketService.sendMessage(selectedChat.idConversation, text);
+      this.newMessage.set('');
+    } catch (err: any) {
+      console.error('Error al enviar mensaje:', err);
+      alert(err.message || 'No se pudo enviar el mensaje.');
+    }
+  }
 
-  
-    const updated = this.chats().find(c => c.id === this.selectedChat()!.id)!;
-    this.selectedChat.set(updated);
-    this.newMessage.set('');
+  getChatPreviewTime(value: string | null) {
+    if (!value) return 'Nuevo';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleTimeString('es-HN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getMessageTime(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleTimeString('es-HN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  isMine(message: ChatMessage) {
+    return message.idSenderUser === this.getCurrentUserId();
   }
 }
