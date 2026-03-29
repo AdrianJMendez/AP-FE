@@ -1,5 +1,5 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, computed, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
 import {
@@ -67,6 +67,7 @@ const CONDITION_MAP: Record<string, number> = {
 })
 export class HomeComponent implements OnInit {
   private productService = inject(ProductService);
+  private platformId = inject(PLATFORM_ID);
 
   readonly Search = Search;
   readonly MessageCircle = MessageCircle;
@@ -96,14 +97,16 @@ export class HomeComponent implements OnInit {
   currentMyPage = signal(1);
 
   isAddDialogOpen = signal(false);
-  imagePreviewUrl = signal('');
+  imagePreviews = signal<string[]>([]);       // URLs base64 para mostrar preview
+  imageUrls    = signal<string[]>([]);        // URLs de ImgBB ya subidas
+  uploadingCount = signal(0);                 // cuántas subidas están en curso
   isSaving = signal(false);
-  isUploadingImage = signal(false); // Estado para saber si la imagen se está subiendo
+
+  get isUploadingImage() { return this.uploadingCount() > 0; }
 
   newProduct = signal({
     title: '',
     description: '',
-    image: '',
     status: 'Venta' as 'Venta' | 'Intercambio' | 'Donación',
     price: '',
     condition: 'Usado',
@@ -126,13 +129,24 @@ export class HomeComponent implements OnInit {
   };
 
   ngOnInit() {
-    this.loadProducts();
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadProducts();
+    }
+  }
+
+  private getCurrentUser(): { idUser?: number; firstName?: string; lastName?: string } {
+    if (!isPlatformBrowser(this.platformId)) return {};
+    try {
+      return JSON.parse(localStorage.getItem('currentUser') || '{}');
+    } catch {
+      return {};
+    }
   }
 
   loadProducts() {
     this.productService.getProducts(this.currentPage()).subscribe({
       next: (response: any) => {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const currentUser = this.getCurrentUser();
         const rawData = response.data || [];
         const currentUserId = currentUser?.idUser;
 
@@ -141,7 +155,7 @@ export class HomeComponent implements OnInit {
         const mapped: Product[] = rawData.map((p: any) => ({
           id: p.idProduct,
           title: p.productName,
-          image: (p.images && p.images.length > 0)
+          image: (p.images && p.images.length > 0 && p.images[0].imageUrl)
                   ? p.images[0].imageUrl
                   : 'assets/productos/default.jpg',
           status: p.modalityName as any,
@@ -168,9 +182,9 @@ export class HomeComponent implements OnInit {
     this.newProduct.update(p => ({ ...p, [field]: value }));
   }
 
-  clearImage() {
-    this.imagePreviewUrl.set('');
-    this.newProduct.update(p => ({ ...p, image: '' }));
+  clearImageAt(index: number) {
+    this.imagePreviews.update(list => list.filter((_, i) => i !== index));
+    this.imageUrls.update(list => list.filter((_, i) => i !== index));
   }
 
   onTagsChange(value: string) {
@@ -209,7 +223,7 @@ export class HomeComponent implements OnInit {
   );
 
   isMyProduct = computed(() => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const currentUser = this.getCurrentUser();
     return (product: Product) => product.ownerId === Number(currentUser?.idUser);
   });
 
@@ -259,9 +273,10 @@ export class HomeComponent implements OnInit {
 
   closeAddDialog() {
     this.isAddDialogOpen.set(false);
-    this.imagePreviewUrl.set('');
+    this.imagePreviews.set([]);
+    this.imageUrls.set([]);
     this.newProduct.set({
-      title: '', description: '', image: '',
+      title: '', description: '',
       status: 'Venta', price: '', condition: 'Usado',
       category: '', career: '', tags: []
     });
@@ -272,40 +287,54 @@ export class HomeComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
 
+    const remaining = 2 - this.imageUrls().length;
+    if (remaining <= 0) {
+      alert('Ya alcanzaste el máximo de 2 imágenes.');
+      input.value = '';
+      return;
+    }
+
     const file = input.files[0];
 
-    // Mostrar preview local inmediatamente
+    // Preview local inmediato
     const reader = new FileReader();
-    reader.onload = () => this.imagePreviewUrl.set(reader.result as string);
+    reader.onload = () => {
+      this.imagePreviews.update(list => [...list, reader.result as string]);
+    };
     reader.readAsDataURL(file);
 
-    // Subir imagen al servidor y guardar solo la ruta
-    this.isUploadingImage.set(true);
-    const formData = new FormData();
-    formData.append('image', file);
+    // Subir a ImgBB
+    this.uploadingCount.update(n => n + 1);
+    const slotIndex = this.imageUrls().length; // posición que ocupará en el array
 
-    this.productService.uploadImage(formData).subscribe({
-      next: (res: any) => {
-        this.isUploadingImage.set(false);
-        this.newProduct.update(p => ({ ...p, image: res.imageUrl }));
+    this.productService.uploadImage(file).subscribe({
+      next: (url: string) => {
+        this.uploadingCount.update(n => n - 1);
+        this.imageUrls.update(list => {
+          const copy = [...list];
+          copy[slotIndex] = url;
+          return copy;
+        });
       },
       error: () => {
-        this.isUploadingImage.set(false);
+        this.uploadingCount.update(n => n - 1);
+        this.imagePreviews.update(list => list.slice(0, -1)); // quita el preview fallido
         alert('Error al subir la imagen. Intenta de nuevo.');
-        this.clearImage();
       }
     });
+
+    input.value = ''; // limpia el input para poder seleccionar el mismo archivo de nuevo
   }
 
   publishProduct() {
     const p = this.newProduct();
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const currentUser = this.getCurrentUser();
 
     if (!p.title.trim())       { alert('El título es obligatorio.');       return; }
     if (!p.description.trim()) { alert('La descripción es obligatoria.');  return; }
     if (!p.category)           { alert('Selecciona una categoría.');       return; }
     if (!p.condition)          { alert('Selecciona una condición.');       return; }
-    if (this.isUploadingImage()) { alert('Espera a que la imagen termine de subirse.'); return; }
+    if (this.isUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
 
     const idModality  = MODALITY_MAP[p.status];
     const idCategory  = CATEGORY_MAP[p.category];
@@ -326,7 +355,7 @@ export class HomeComponent implements OnInit {
       idCategory,
       idStatus:    1,
       idUser:      currentUser.idUser,
-      images:      p.image ? [{ imageUrl: p.image }] : []
+      images:      this.imageUrls().map(url => ({ imageUrl: url }))
     };
 
     this.isSaving.set(true);
@@ -343,7 +372,7 @@ export class HomeComponent implements OnInit {
         const newMapped: Product = {
           id: response?.data?.idProduct ?? Date.now(),
           title: p.title.trim(),
-          image: p.image || 'assets/productos/default.jpg',
+          image: this.imageUrls()[0] || 'assets/productos/default.jpg',
           status: p.status,
           price: p.price ? parseFloat(p.price) : 0,
           tags: [p.category, p.condition].filter(Boolean),

@@ -496,23 +496,44 @@
                     class="form-input resize-none"></textarea>
         </div>
 
-        <!-- Imagen -->
+        <!-- Imágenes (máx. 2) -->
         <div class="form-group">
-          <label class="form-label">Imagen del producto *</label>
-          @if (imagePreviewUrl()) {
-            <div class="relative mb-3">
-              <img [src]="imagePreviewUrl()" alt="Preview"
-                   class="max-h-40 w-full rounded-2xl object-cover border border-gray-200" />
-              <button (click)="clearImage()"
-                      class="absolute top-2 right-2 p-1 bg-white rounded-full shadow">
-                <lucide-icon [name]="X" class="w-4 h-4 text-gray-600"></lucide-icon>
-              </button>
+          <label class="form-label">
+            Imágenes del producto
+            <span class="text-gray-400 font-normal">(máx. 2)</span>
+          </label>
+
+          <!-- Previews de imágenes ya cargadas -->
+          @if (imagePreviews().length > 0) {
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              @for (preview of imagePreviews(); track $index) {
+                <div class="relative group">
+                  <img [src]="preview" alt="Preview {{ $index + 1 }}"
+                       class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
+                  <!-- Spinner mientras sube -->
+                  @if (!imageUrls()[$index]) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
+                      <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  }
+                  <!-- Botón eliminar -->
+                  <button (click)="clearImageAt($index)"
+                          class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow
+                                 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <lucide-icon [name]="X" class="w-3.5 h-3.5 text-gray-700"></lucide-icon>
+                  </button>
+                </div>
+              }
             </div>
           }
-          @if (!imagePreviewUrl()) {
+
+          <!-- Botón de agregar imagen (solo si hay menos de 2) -->
+          @if (imagePreviews().length < 2) {
             <label class="file-upload-area" for="fileInput">
               <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
-              <span class="text-sm font-semibold text-gray-600">Haz clic para subir una imagen</span>
+              <span class="text-sm font-semibold text-gray-600">
+                {{ imagePreviews().length === 0 ? 'Haz clic para subir una imagen' : 'Agregar segunda imagen' }}
+              </span>
               <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
             </label>
           }
@@ -520,6 +541,7 @@
                  (change)="onFileSelected($event)"
                  class="hidden" />
         </div>
+
 
         <!-- Modalidad -->
         <div class="form-group">
