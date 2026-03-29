@@ -46,24 +46,22 @@ export class LoginComponent {
     // 2. Llamada real al servicio de autenticación
     this.authService.login(email, password).subscribe({
       next: (response: any) => {
-        this.loading.set(false);
+      this.loading.set(false);
 
-        // Verificamos si el Procedimiento Almacenado indica éxito
-        if (response && !response.hasError) {
-          // Extraemos el ID o generamos un token provisional para la sesión
-          const userId = response.data?.idUser || 'default';
-          this.authService.setToken(`PUMA_TOKEN_${userId}`);
-          
-          console.log('Login exitoso:', response.meta[0]?.message);
-          
-          // Redirección al Home
-          this.router.navigate(['/home']);
-        } else {
-          // El servidor respondió 200 pero con error de credenciales en el body
-          const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
-          this.error.set(msg);
-        }
-      },
+      if (response && !response.hasError) {
+        const userId = response.data?.idUser || 'default';
+        
+        localStorage.setItem('currentUser', JSON.stringify(response.data));
+        
+        this.authService.setToken(`PUMA_TOKEN_${userId}`);
+        
+        console.log('Login exitoso:', response.meta[0]?.message);
+        this.router.navigate(['/home']);
+      } else {
+        const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
+        this.error.set(msg);
+      }
+    },
       error: (err) => {
         this.loading.set(false);
         
