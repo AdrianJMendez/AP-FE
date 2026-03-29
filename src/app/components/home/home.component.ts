@@ -85,8 +85,6 @@ const CONDITION_MAP: Record<string, number> = {
 })
 export class HomeComponent implements OnInit {
   private productService = inject(ProductService);
-  private platformId = inject(PLATFORM_ID);
-  private router = inject(Router);
 
   // ── Lucide icons ──────────────────────────────────────────────
   readonly Search = Search;
@@ -121,9 +119,7 @@ export class HomeComponent implements OnInit {
 
   // ── Agregar producto ──────────────────────────────────────────
   isAddDialogOpen = signal(false);
-  imagePreviews = signal<string[]>([]);
-  imageUrls     = signal<string[]>([]);
-  uploadingCount = signal(0);
+  imagePreviewUrl = signal('');
   isSaving = signal(false);
 
   get isUploadingImage() { return this.uploadingCount() > 0; }
@@ -247,41 +243,29 @@ export class HomeComponent implements OnInit {
 
   // ─────────────────────────────────────────────────────────────
   ngOnInit() {
-    if (isPlatformBrowser(this.platformId)) {
-      this.loadProducts();
-    }
+    this.loadProducts();
   }
 
-  private getCurrentUser(): any {
-    if (!isPlatformBrowser(this.platformId)) return {};
-    try {
-      return JSON.parse(localStorage.getItem('currentUser') || '{}');
-    } catch {
-      return {};
-    }
-  }
-
-  // ── Carga de productos ────────────────────────────────────────
   loadProducts() {
     this.productService.getProducts(this.currentPage()).subscribe({
       next: (response: any) => {
-        const currentUser   = this.getCurrentUser();
-        const rawData       = response.data || [];
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const rawData = response.data || [];
         const currentUserId = currentUser?.idUser;
 
         this.totalPagesFromServer.set(response.meta?.[0]?.totalPages ?? 1);
 
         const mapped: Product[] = rawData.map((p: any) => ({
-          id:          p.idProduct,
-          title:       p.productName,
-          image:       (p.images && p.images.length > 0 && p.images[0].imageUrl)
-                         ? p.images[0].imageUrl
-                         : 'assets/productos/default.jpg',
-          status:      p.modalityName as any,
-          price:       p.price,
-          tags:        [p.categoryName, p.conditionName].filter(Boolean),
-          category:    p.categoryName || 'Otros',
-          career:      'Todas',
+          id: p.idProduct,
+          title: p.productName,
+          image: (p.images && p.images.length > 0)
+                  ? p.images[0].imageUrl
+                  : 'assets/productos/default.jpg',
+          status: p.modalityName as any,
+          price: p.price,
+          tags: [p.categoryName, p.conditionName].filter(Boolean),
+          category: p.categoryName || 'Otros',
+          career: 'Todas',
           description: p.description,
           owner:       `${p.firstName} ${p.lastName}`,
           // ✅ FIX: siempre normalizar a Number para evitar comparación string vs number
@@ -348,9 +332,8 @@ export class HomeComponent implements OnInit {
   );
 
   isMyProduct = computed(() => {
-    const myId = Number(this.getCurrentUser()?.idUser);
-    // ✅ FIX: consistencia con la misma normalización usada en loadProducts
-    return (product: Product) => !isNaN(myId) && product.ownerId === myId;
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    return (product: Product) => product.ownerId === Number(currentUser?.idUser);
   });
 
   // ── Status helpers ────────────────────────────────────────────
@@ -430,14 +413,17 @@ export class HomeComponent implements OnInit {
 
     const file = input.files[0];
 
+    // Mostrar preview local inmediatamente
     const reader = new FileReader();
     reader.onload = () => {
       this.imagePreviews.update(list => [...list, reader.result as string]);
     };
     reader.readAsDataURL(file);
 
-    this.uploadingCount.update(n => n + 1);
-    const slotIndex = this.imageUrls().length;
+    // Subir imagen al servidor y guardar solo la ruta
+    this.isUploadingImage.set(true);
+    const formData = new FormData();
+    formData.append('image', file);
 
     this.productService.uploadImage(file).subscribe({
       next: (url: string) => {
@@ -449,24 +435,21 @@ export class HomeComponent implements OnInit {
         });
       },
       error: () => {
-        this.uploadingCount.update(n => n - 1);
-        this.imagePreviews.update(list => list.slice(0, -1));
+        this.isUploadingImage.set(false);
         alert('Error al subir la imagen. Intenta de nuevo.');
       }
     });
-
-    input.value = '';
   }
 
   publishProduct() {
-    const p           = this.newProduct();
-    const currentUser = this.getCurrentUser();
+    const p = this.newProduct();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-    if (!p.title.trim())       { alert('El título es obligatorio.');      return; }
-    if (!p.description.trim()) { alert('La descripción es obligatoria.'); return; }
-    if (!p.category)           { alert('Selecciona una categoría.');      return; }
-    if (!p.condition)          { alert('Selecciona una condición.');      return; }
-    if (this.isUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
+    if (!p.title.trim())       { alert('El título es obligatorio.');       return; }
+    if (!p.description.trim()) { alert('La descripción es obligatoria.');  return; }
+    if (!p.category)           { alert('Selecciona una categoría.');       return; }
+    if (!p.condition)          { alert('Selecciona una condición.');       return; }
+    if (this.isUploadingImage()) { alert('Espera a que la imagen termine de subirse.'); return; }
 
     const idModality  = MODALITY_MAP[p.status];
     const idCategory  = CATEGORY_MAP[p.category];
@@ -502,14 +485,14 @@ export class HomeComponent implements OnInit {
         }
 
         const newMapped: Product = {
-          id:          response?.data?.idProduct ?? Date.now(),
-          title:       p.title.trim(),
-          image:       this.imageUrls()[0] || 'assets/productos/default.jpg',
-          status:      p.status,
-          price:       p.price ? parseFloat(p.price) : 0,
-          tags:        [p.category, p.condition].filter(Boolean),
-          category:    p.category,
-          career:      p.career || 'Todas',
+          id: response?.data?.idProduct ?? Date.now(),
+          title: p.title.trim(),
+          image: p.image || 'assets/productos/default.jpg',
+          status: p.status,
+          price: p.price ? parseFloat(p.price) : 0,
+          tags: [p.category, p.condition].filter(Boolean),
+          category: p.category,
+          career: p.career || 'Todas',
           description: p.description.trim(),
           owner:       `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim(),
           // ✅ FIX: consistencia al crear producto nuevo localmente
