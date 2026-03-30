@@ -39,5 +39,39 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('currentUser');
+  }
+
+  setCurrentUser(data: any): void {
+    localStorage.setItem('currentUser', JSON.stringify(data));
+  }
+
+  getCurrentUser(): { idUser?: number; isEmployee?: boolean; isStudent?: boolean } | null {
+    const raw = localStorage.getItem('currentUser');
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  isEmployee(): boolean {
+    return !!this.getCurrentUser()?.isEmployee;
+  }
+
+  isStudent(): boolean {
+    return !!this.getCurrentUser()?.isStudent;
+  }
+
+  hasAdminAccess(): boolean {
+    // Preferencia: si es empleado (incluso si también es estudiante), acceso admin.
+    return this.isEmployee();
+  }
+
+  hasHomeAccess(): boolean {
+    // El estudiante o empleado puede ver home.
+    return this.isStudent() || this.isEmployee();
   }
 }

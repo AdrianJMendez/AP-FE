@@ -1,0 +1,114 @@
+/* Animación de entrada suave */
+
+.animate-fade-in {
+
+  animation: fadeIn 0.5s ease-out;
+
+}
+
+
+
+@keyframes fadeIn {
+
+  from { opacity: 0; transform: translateY(10px); }
+
+  to { opacity: 1; transform: translateY(0); }
+
+}
+
+
+
+/* Contenedor principal */
+
+:host {
+
+  display: block;
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+}
+
+
+
+/* Estilo de las Cards de Stats */
+
+.grid > div {
+
+  transition: transform 0.2s ease, shadow 0.2s ease;
+
+}
+
+
+
+.grid > div:hover {
+
+  transform: translateY(-4px);
+
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+
+}
+
+
+
+/* Ajustes para la Tabla */
+
+table {
+
+  width: 100%;
+
+  border-spacing: 0;
+
+}
+
+
+
+thead th {
+
+  border-bottom: 1px solid #f3f4f6;
+
+}
+
+
+
+/* Estilo para las filas de la tabla */
+
+tbody tr {
+
+  transition: all 0.2s ease;
+
+}
+
+
+
+tbody tr:last-child td {
+
+  border-bottom: none;
+
+}
+
+
+
+/* Scrollbar personalizada para la tabla en móviles */
+
+.overflow-x-auto::-webkit-scrollbar {
+
+  height: 6px;
+
+}
+
+
+
+.overflow-x-auto::-webkit-scrollbar-track {
+
+  background: #f1f1f1;
+
+  border-radius: 10px;
+
+}
+
+
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+
+  background: #e2e8f0;
+}

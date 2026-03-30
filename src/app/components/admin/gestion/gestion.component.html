@@ -1,0 +1,151 @@
+<div class="min-h-screen bg-gray-50 flex flex-col animate-fade-in font-sans">
+
+  <header class="px-6 py-4 text-white shadow-lg bg-[#2E4C9E]">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4 cursor-pointer" routerLink="/admin">
+        <span class="bg-white text-[#2E4C9E] font-bold px-3 py-1 rounded-lg text-sm">AP</span>
+        <h1 class="text-xl font-bold tracking-tight uppercase">Ayuda Puma</h1>
+      </div>
+
+      <nav class="flex items-center gap-8">
+        <button 
+          routerLink="/admin" 
+          class="text-blue-100 hover:text-white transition-colors font-medium">
+          Panel
+        </button>
+        
+        <button 
+          routerLink="/admin/gestion" 
+          class="px-4 py-2 bg-white/10 rounded-lg font-medium border border-white/20">
+          Gestionar Publicaciones
+        </button>
+
+        <button (click)="logout()" class="flex items-center gap-2 bg-red-500/10 hover:bg-red-500 px-4 py-2 rounded-lg transition-all border border-red-500/20 text-sm">
+          <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
+          Cerrar Sesión
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
+    
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Gestión de Inventario</h2>
+      <p class="text-gray-500 mt-1 font-medium">Control de disponibilidad y moderación de anuncios</p>
+    </div>
+
+    <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="p-6 border-b border-gray-50 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-gray-800">Publicaciones del Sistema</h3>
+        <span class="px-3 py-1 bg-blue-50 text-[#2E4C9E] text-[11px] font-bold rounded-full border border-blue-100">
+          {{ publications().length }} Ítems
+        </span>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50/50 text-[11px] uppercase tracking-widest text-gray-400 font-bold">
+              <th class="px-6 py-4">Información del Producto</th>
+              <th class="px-6 py-4">Vendedor</th>
+              <th class="px-6 py-4 text-center">Fecha</th>
+              <th class="px-6 py-4 text-center">Disponibilidad</th>
+              <th class="px-6 py-4 text-center">Moderación</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            @for (pub of publications(); track pub.id) {
+              <tr class="hover:bg-blue-50/30 transition-colors group">
+                <td class="px-6 py-5">
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-gray-700 text-sm uppercase tracking-tight">{{ pub.title }}</span>
+                    <span class="text-[10px] text-[#2E4C9E] font-bold uppercase mt-0.5">{{ pub.category }} — {{ pub.price }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-5 text-gray-600 text-sm font-medium">{{ pub.user }}</td>
+                <td class="px-6 py-5 text-center text-gray-400 text-xs font-bold">{{ pub.date }}</td>
+                
+                <td class="px-6 py-5">
+                  <div class="flex justify-center">
+                    <span [ngClass]="{
+                      'bg-green-50 text-green-600 border-green-100': pub.status === 'Disponible',
+                      'bg-amber-50 text-amber-600 border-amber-100': pub.status === 'Reservado',
+                      'bg-blue-50 text-blue-600 border-blue-100': pub.status === 'Donado'
+                    }" class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border">
+                      {{ pub.status }}
+                    </span>
+                  </div>
+                </td>
+
+                <td class="px-6 py-5">
+                  <div class="flex items-center justify-center gap-2">
+                    
+                    <button class="p-2 text-gray-300 hover:text-[#2E4C9E] hover:bg-blue-50 rounded-xl transition-all" title="Ver detalles">
+                      <lucide-icon [name]="Eye" class="w-5 h-5"></lucide-icon>
+                    </button>
+
+                    <div class="w-px h-6 bg-gray-100 mx-1"></div>
+
+                    <button 
+                      (click)="toggleApproval(pub.id, true)"
+                      [disabled]="pub.isApproved"
+                      [class.opacity-20]="pub.isApproved"
+                      class="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all" 
+                      title="Aprobar">
+                      <lucide-icon [name]="CheckCircle" class="w-6 h-6"></lucide-icon>
+                    </button>
+
+                    <button 
+                      (click)="toggleApproval(pub.id, false)"
+                      [disabled]="!pub.isApproved"
+                      [class.opacity-20]="!pub.isApproved"
+                      class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-all" 
+                      title="Quitar aprobación">
+                      <lucide-icon [name]="XCircle" class="w-6 h-6"></lucide-icon>
+                    </button>
+
+                    <div class="w-px h-6 bg-gray-100 mx-1"></div>
+
+                    <button 
+                      (click)="deletePublication(pub.id)"
+                      class="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" 
+                      title="Eliminar de DB">
+                      <lucide-icon [name]="Trash2" class="w-5 h-5"></lucide-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-[#222222] text-gray-400 py-12 px-6">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+      <div class="space-y-4">
+        <h3 class="text-white font-black text-xl tracking-tighter uppercase">Ayuda Puma</h3>
+        <p class="text-xs">© 2025 Ayuda PUMA. <br> Todos los derechos reservados.</p>
+      </div>
+      <div>
+        <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Servicios</h4>
+        <ul class="text-sm space-y-2">
+          <li class="hover:text-white cursor-pointer transition-colors">Donación de Materiales</li>
+          <li class="hover:text-white cursor-pointer transition-colors">Compra y Venta</li>
+          <li class="hover:text-white cursor-pointer transition-colors">Préstamos</li>
+          <li class="hover:text-white cursor-pointer transition-colors">Intercambios</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Contáctanos</h4>
+        <ul class="text-sm space-y-2">
+          <li>WhatsApp: 3334-56-08</li>
+          <li>contacto.ayudapuma@unah.edu.hn</li>
+          <li class="italic opacity-60">UNAH - Ciudad Universitaria</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</div>
