@@ -50,13 +50,21 @@ export class LoginComponent {
 
       if (response && !response.hasError) {
         const userId = response.data?.idUser || 'default';
-        
-        localStorage.setItem('currentUser', JSON.stringify(response.data));
-        
+        const user = response.data || {};
+
+        this.authService.setCurrentUser(user);
         this.authService.setToken(`PUMA_TOKEN_${userId}`);
-        
+
         console.log('Login exitoso:', response.meta?.[0]?.message);
-        this.router.navigate(['/home']);
+
+        if (user.isEmployee) {
+          this.router.navigate(['/admin']);
+        } else if (user.isStudent) {
+          this.router.navigate(['/home']);
+        } else {
+          // fallback seguro
+          this.router.navigate(['/']);
+        }
       } else {
         const msg = response.meta?.[0]?.message || 'Usuario o contraseña incorrectos.';
         this.error.set(msg);
@@ -72,7 +80,7 @@ export class LoginComponent {
           this.error.set(msg);
         } else {
           // Error de red o servidor caído
-          this.error.set('Error de conexión con el servidor. Verifica que el Backend esté activo.');
+          this.error.set('Error de conexión con el servidor.');
         }
         console.error('Detalle del error:', err);
       }

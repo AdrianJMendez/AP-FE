@@ -1,0 +1,50 @@
+:host {
+  --unah-blue: #2E4C9E;
+  display: block;
+}
+
+/* Forzado de tipografía pesada para replicar estética Admin */
+h2, h3, .font-black {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+}
+
+/* Estilos compartidos del Admin */
+.tag {
+  padding: 0.25rem 0.75rem;
+  font-size: 9px;
+  font-weight: 900;
+  border-radius: 9999px;
+  background-color: #eff6ff;
+  color: var(--unah-blue);
+  border: 1px solid #bfdbfe;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Animación de entrada suave */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Comportamiento de botones de moderación */
+button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+/* Scrollbar personalizado */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
