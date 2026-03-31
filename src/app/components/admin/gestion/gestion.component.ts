@@ -1,67 +1,75 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
-import { 
-  LucideAngularModule, 
-  Trash2, 
-  Eye, // Icono para ver detalles
-  Search,
-  LogOut,
-  CheckCircle,
-  XCircle,
-  Clock
-} from 'lucide-angular';
-
-interface Publication {
-  id: number;
-  title: string;
-  user: string;
-  category: string;
-  price: string;
-  date: string;
-  status: 'Disponible' | 'Reservado' | 'Donado';
-  isApproved: boolean; // Control de moderación
-}
+import { RouterModule, Router } from '@angular/router'; // Añadido Router
+import { FormsModule } from '@angular/forms';
+import { ProductService } from '../../../services/product.service';
+import { LucideAngularModule, Trash2, CheckCircle, LogOut } from 'lucide-angular';
 
 @Component({
   selector: 'app-gestion',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, RouterModule],
-  templateUrl: './gestion.component.html',
-  styleUrl: './gestion.component.css'
+  imports: [CommonModule, LucideAngularModule, RouterModule, FormsModule],
+  templateUrl: './gestion.component.html'
 })
-export class GestionComponent {
-  private router = inject(Router);
+export class GestionComponent implements OnInit {
+  private productService = inject(ProductService);
+  private router = inject(Router); // Inyectamos el Router
 
-  // Referencias para Lucide
   readonly Trash2 = Trash2;
-  readonly Eye = Eye;
   readonly CheckCircle = CheckCircle;
-  readonly XCircle = XCircle;
   readonly LogOut = LogOut;
-  readonly Clock = Clock;
 
-  publications = signal<Publication[]>([
-    { id: 1, title: 'iPhone 13 Pro Max', user: 'Juan Pérez', category: 'Tecnología', price: 'L. 15,000', date: '18/01/2025', status: 'Disponible', isApproved: false },
-    { id: 2, title: 'Calculadora TI-84 Plus', user: 'Maria Sosa', category: 'Académico', price: 'L. 1,200', date: '17/01/2025', status: 'Disponible', isApproved: true },
-    { id: 3, title: 'Bata de Laboratorio L', user: 'Carlos Ruiz', category: 'Uniformes', price: 'Donación', date: '16/01/2025', status: 'Donado', isApproved: false },
-    { id: 4, title: 'Libro Física Universitaria', user: 'Ana Martínez', category: 'Libros', price: 'L. 500', date: '15/01/2025', status: 'Reservado', isApproved: true },
-    { id: 5, title: 'Laptop Dell Inspiron', user: 'Roberto Gómez', category: 'Tecnología', price: 'L. 8,500', date: '14/01/2025', status: 'Disponible', isApproved: false }
-  ]);
+  publications = signal<any[]>([]);
+  showModal = signal(false);
+  selectedPublication = signal<any>(null);
+  selectedStatus = signal<number>(1);
+  actionReason = '';
 
-  toggleApproval(id: number, approved: boolean) {
-    this.publications.update(pubs => 
-      pubs.map(p => p.id === id ? { ...p, isApproved: approved } : p)
-    );
+  ngOnInit() {
+    this.loadPending();
   }
 
-  deletePublication(id: number) {
-    if (confirm('¿Eliminar esta publicación de la base de datos?')) {
-      this.publications.update(pubs => pubs.filter(p => p.id !== id));
-    }
-  }
-
+  // --- NUEVA FUNCIÓN LOGOUT ---
   logout() {
-    this.router.navigate(['/']); 
+    this.router.navigate(['/login']);
+  }
+
+  loadPending() {
+    this.productService.getRequestedProducts(1).subscribe({
+      next: (res: any) => {
+        this.publications.set(res.data || []);
+      },
+      error: (err) => console.error('Error cargando pendientes:', err)
+    });
+  }
+
+  openModal(pub: any, status: number) {
+    this.selectedPublication.set(pub);
+    this.selectedStatus.set(status);
+    this.actionReason = status === 1 ? 'Publicación aprobada por moderación' : '';
+    this.showModal.set(true);
+  }
+
+  closeModal() {
+    this.showModal.set(false);
+    this.selectedPublication.set(null);
+    this.actionReason = '';
+  }
+
+  confirmAction() {
+    const pub = this.selectedPublication();
+    if (!pub) return;
+
+    this.productService.changeStatus(
+      pub.idProduct, 
+      this.selectedStatus(), 
+      this.actionReason
+    ).subscribe({
+      next: () => {
+        this.loadPending();
+        this.closeModal();
+      },
+      error: (err) => alert('Error al procesar la acción: ' + err.message)
+    });
   }
 }
