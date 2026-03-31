@@ -6,7 +6,7 @@
       <img src="assets/ayudapuma.png" alt="Ayuda PUMA" class="h-20 w-auto object-contain" />
 
       <div class="flex items-center gap-6">
-     
+
         <button (click)="showFavoritesOnly.set(!showFavoritesOnly())"
                 class="relative p-2 rounded-xl transition-all hover:scale-110">
           <lucide-icon [name]="Heart"
@@ -19,7 +19,6 @@
           </span>
         </button>
 
-
         <button (click)="openMessagesModal()"
                 class="relative p-2 rounded-xl transition-all hover:scale-110">
           <lucide-icon [name]="MessageCircle" class="w-6 h-6"></lucide-icon>
@@ -28,7 +27,6 @@
             {{ chats().length }}
           </span>
         </button>
-
 
         <div class="flex items-center gap-2 pl-4 border-l border-blue-400 cursor-pointer"
              (click)="openProfileModal()">
@@ -144,7 +142,7 @@
         </div>
       </div>
 
-
+      <!-- TAB: CATÁLOGO GENERAL -->
       @if (activeTab() === 'todos') {
 
         @if (viewMode() === 'grid') {
@@ -261,7 +259,7 @@
         }
       }
 
-
+      <!-- TAB: MIS PUBLICACIONES -->
       @if (activeTab() === 'mis') {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           @for (product of pagedMyProducts(); track product.id) {
@@ -273,6 +271,12 @@
                 <span class="status-badge {{ getStatusBg(product.status) }} {{ getStatusText(product.status) }} absolute top-4 left-4">
                   {{ product.status }}
                 </span>
+                <!-- Botón editar -->
+                <button (click)="openEditDialog($event, product)"
+                        class="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg
+                               z-20 hover:scale-110 transition-transform hover:bg-[#2E4C9E] hover:text-white group/edit">
+                  <lucide-icon [name]="Pencil" class="w-4 h-4 text-gray-600 group-hover/edit:text-white"></lucide-icon>
+                </button>
               </div>
               <div class="p-5 flex flex-col flex-grow">
                 <h3 class="font-bold text-gray-800 text-base mb-3 line-clamp-2">{{ product.title }}</h3>
@@ -296,16 +300,29 @@
                   <span class="text-lg font-black text-[#2E4C9E]">
                     {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                   </span>
-                  <button class="py-2 px-4 bg-white border border-gray-200 rounded-xl text-[10px]
-                                 font-black uppercase text-gray-500 hover:bg-gray-50 transition-colors">
-                    Gestionar
-                  </button>
+                  <div class="flex gap-2">
+                    <!-- Botón editar -->
+                    <button (click)="openEditDialog($event, product)"
+                            class="py-2 px-3 bg-[#2E4C9E] text-white rounded-xl text-[10px]
+                                   font-black uppercase hover:bg-blue-800 transition-colors flex items-center gap-1">
+                      <lucide-icon [name]="Pencil" class="w-3 h-3"></lucide-icon>
+                      Editar
+                    </button>
+                    <!-- Botón eliminar -->
+                    <button (click)="confirmDelete($event, product)"
+                            [disabled]="isDeleting()"
+                            class="py-2 px-3 bg-red-500 text-white rounded-xl text-[10px]
+                                   font-black uppercase hover:bg-red-600 transition-colors flex items-center gap-1
+                                   disabled:opacity-50 disabled:cursor-not-allowed">
+                      <lucide-icon [name]="Trash2" class="w-3 h-3"></lucide-icon>
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           }
         </div>
-
 
         @if (totalMyPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
@@ -379,6 +396,7 @@
 </button>
 
 
+<!-- ===================== MODAL: DETALLE PRODUCTO ===================== -->
 @if (selectedProduct()) {
   <div class="modal-overlay">
     <div (click)="closeDetail()" class="modal-backdrop"></div>
@@ -390,15 +408,34 @@
 
       <div class="modal-inner">
 
-        <div class="modal-img-col">
-          <img [src]="selectedProduct()?.image"
-               [alt]="selectedProduct()?.title"
-               class="modal-img" />
-          <span class="status-badge modal-status-badge
-                       {{ getStatusBg(selectedProduct()!.status) }}
-                       {{ getStatusText(selectedProduct()!.status) }}">
-            {{ selectedProduct()?.status }}
-          </span>
+        <!-- Columna de imágenes: muestra hasta 2 -->
+        <div class="modal-img-col flex flex-col gap-3">
+          @if (selectedProduct()!.images && selectedProduct()!.images!.length > 1) {
+            @for (img of selectedProduct()!.images!; track $index) {
+              <div class="relative flex-1">
+                <img [src]="img" [alt]="selectedProduct()?.title"
+                     class="w-full h-full object-cover rounded-2xl" />
+                @if ($index === 0) {
+                  <span class="status-badge modal-status-badge
+                               {{ getStatusBg(selectedProduct()!.status) }}
+                               {{ getStatusText(selectedProduct()!.status) }}">
+                    {{ selectedProduct()?.status }}
+                  </span>
+                }
+              </div>
+            }
+          } @else {
+            <div class="relative">
+              <img [src]="selectedProduct()?.image"
+                   [alt]="selectedProduct()?.title"
+                   class="modal-img" />
+              <span class="status-badge modal-status-badge
+                           {{ getStatusBg(selectedProduct()!.status) }}
+                           {{ getStatusText(selectedProduct()!.status) }}">
+                {{ selectedProduct()?.status }}
+              </span>
+            </div>
+          }
         </div>
 
         <div class="modal-info-col">
@@ -409,7 +446,6 @@
           </div>
 
           <h2 class="modal-title">{{ selectedProduct()?.title }}</h2>
-
           <p class="modal-desc">{{ selectedProduct()?.description }}</p>
 
           <div class="flex flex-wrap gap-1 mb-3">
@@ -451,10 +487,26 @@
           }
 
           <div class="flex gap-2 mt-auto pt-3">
-            <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
-              <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
-              CONTACTAR
-            </button>
+            @if (isMyProduct()(selectedProduct()!)) {
+              <button (click)="openEditDialog($event, selectedProduct()!); closeDetail()"
+                      class="modal-action-btn">
+                <lucide-icon [name]="Pencil" class="w-4 h-4"></lucide-icon>
+                EDITAR
+              </button>
+              <button (click)="confirmDelete($event, selectedProduct()!)"
+                      [disabled]="isDeleting()"
+                      class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black
+                             uppercase rounded-xl flex items-center gap-1 transition-colors
+                             disabled:opacity-50 disabled:cursor-not-allowed">
+                <lucide-icon [name]="Trash2" class="w-4 h-4"></lucide-icon>
+                ELIMINAR
+              </button>
+            } @else {
+              <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
+                <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
+                CONTACTAR
+              </button>
+            }
             <button (click)="toggleFavorite($event, selectedProduct()!.id)"
                     class="modal-fav-btn fav-btn">
               <lucide-icon [name]="Heart"
@@ -471,6 +523,157 @@
 }
 
 
+<!-- ===================== MODAL: EDITAR PRODUCTO ===================== -->
+@if (isEditDialogOpen()) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div (click)="closeEditDialog()"
+         class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative
+                flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
+
+      <div class="p-8 pb-0 flex items-start justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-gray-900">Editar producto</h2>
+          <p class="text-sm text-gray-500 mt-1">Modifica los datos de tu publicación</p>
+        </div>
+        <button (click)="closeEditDialog()"
+                class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
+          <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="p-8 overflow-y-auto flex-1 space-y-5">
+
+        <div class="form-group">
+          <label class="form-label">Título *</label>
+          <input [ngModel]="editProduct().title"
+                 (ngModelChange)="setEditProductField('title', $event)"
+                 type="text" placeholder="Ej: Calculadora Científica HP"
+                 class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción *</label>
+          <textarea [ngModel]="editProduct().description"
+                    (ngModelChange)="setEditProductField('description', $event)"
+                    rows="3"
+                    placeholder="Describe el estado, características y detalles del producto..."
+                    class="form-input resize-none"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Imágenes del producto
+            <span class="text-gray-400 font-normal">(máx. 2)</span>
+          </label>
+
+          @if (editImagePreviews().length > 0) {
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              @for (preview of editImagePreviews(); track $index) {
+                <div class="relative group">
+                  <img [src]="preview" alt="Preview {{ $index + 1 }}"
+                       class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
+                  @if (!editImageUrls()[$index]) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
+                      <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  }
+                  <button (click)="clearEditImageAt($index)"
+                          class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow
+                                 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <lucide-icon [name]="X" class="w-3.5 h-3.5 text-gray-700"></lucide-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (editImagePreviews().length < 2) {
+            <label class="file-upload-area" for="editFileInput">
+              <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
+              <span class="text-sm font-semibold text-gray-600">
+                {{ editImagePreviews().length === 0 ? 'Haz clic para subir una imagen' : 'Agregar segunda imagen' }}
+              </span>
+              <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
+            </label>
+          }
+          <input id="editFileInput" type="file" accept="image/*"
+                 (change)="onEditFileSelected($event)"
+                 class="hidden" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Modalidad *</label>
+          <select [ngModel]="editProduct().status"
+                  (ngModelChange)="setEditProductField('status', $event)"
+                  class="form-input">
+            <option value="Venta">Venta</option>
+            <option value="Intercambio">Intercambio</option>
+            <option value="Donación">Donación</option>
+          </select>
+        </div>
+
+        @if (editProduct().status === 'Venta' || editProduct().status === 'Intercambio') {
+          <div class="form-group">
+            <label class="form-label">Precio (L.)</label>
+            <input [ngModel]="editProduct().price"
+                   (ngModelChange)="setEditProductField('price', $event)"
+                   type="number" placeholder="0.00"
+                   class="form-input" />
+          </div>
+        }
+
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select [ngModel]="editProduct().category"
+                  (ngModelChange)="setEditProductField('category', $event)"
+                  class="form-input">
+            <option value="" disabled>Selecciona una categoría</option>
+            <option value="Tecnología">Tecnología</option>
+            <option value="Libros y Material Académico">Libros y Material Académico</option>
+            <option value="Uniformes">Uniformes</option>
+            <option value="Electrodomésticos">Electrodomésticos</option>
+            <option value="Ropa y Accesorios">Ropa y Accesorios</option>
+            <option value="Deportes">Deportes</option>
+            <option value="Hogar">Hogar</option>
+            <option value="Instrumentos Musicales">Instrumentos Musicales</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Condición *</label>
+          <select [ngModel]="editProduct().condition"
+                  (ngModelChange)="setEditProductField('condition', $event)"
+                  class="form-input">
+            <option value="Nuevo">Nuevo</option>
+            <option value="Usado">Usado</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
+        <button (click)="closeEditDialog()"
+                class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold
+                       text-gray-600 hover:bg-gray-50 transition-colors">
+          Cancelar
+        </button>
+        <button (click)="saveEditProduct()"
+                [disabled]="isEditSaving()"
+                class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold
+                       hover:bg-blue-800 transition-colors shadow-md shadow-blue-200
+                       disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ isEditSaving() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
+
+<!-- ===================== MODAL: AGREGAR PRODUCTO ===================== -->
 @if (isAddDialogOpen()) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
     <div (click)="closeAddDialog()"
@@ -491,7 +694,6 @@
 
       <div class="p-8 overflow-y-auto flex-1 space-y-5">
 
-
         <div class="form-group">
           <label class="form-label">Título *</label>
           <input [ngModel]="newProduct().title"
@@ -499,7 +701,6 @@
                  type="text" placeholder="Ej: Calculadora Científica HP"
                  class="form-input" />
         </div>
-
 
         <div class="form-group">
           <label class="form-label">Descripción *</label>
@@ -509,7 +710,6 @@
                     placeholder="Describe el estado, características y detalles del producto..."
                     class="form-input resize-none"></textarea>
         </div>
-
 
         <div class="form-group">
           <label class="form-label">
@@ -552,7 +752,6 @@
                  class="hidden" />
         </div>
 
-
         <div class="form-group">
           <label class="form-label">Modalidad *</label>
           <select [ngModel]="newProduct().status"
@@ -592,7 +791,6 @@
           </select>
         </div>
 
-
         <div class="form-group">
           <label class="form-label">Condición *</label>
           <select [ngModel]="newProduct().condition"
@@ -618,7 +816,6 @@
             <option value="Biología">Biología</option>
           </select>
         </div>
-
 
         <div class="form-group">
           <label class="form-label">Etiquetas (separadas por coma)</label>
@@ -657,13 +854,12 @@
 }
 
 
-
+<!-- ===================== MODAL: PERFIL DE USUARIO ===================== -->
 @if (isProfileOpen()) {
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeProfileModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
 
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden">
-
 
       <div class="h-24 bg-[#2E4C9E] relative">
         <button (click)="closeProfileModal()"
@@ -672,7 +868,6 @@
         </button>
       </div>
 
-      
       <div class="flex justify-center -mt-10 mb-4 relative z-10">
         <div class="w-20 h-20 rounded-full bg-[#17a2b8] flex items-center justify-center ring-4 ring-white shadow-lg">
           <lucide-icon [name]="User" class="w-10 h-10 text-white"></lucide-icon>
@@ -680,21 +875,14 @@
       </div>
 
       <div class="px-6 pb-6">
-      
         <div class="text-center mb-5">
+          <!-- Nombre real del usuario desde localStorage -->
           <h2 class="text-xl font-bold text-gray-900">{{ currentUserName() }}</h2>
           <p class="text-sm text-gray-500 mt-1">{{ currentUserEmail() }}</p>
-          <p class="text-sm text-gray-500">Ingeniería en Sistemas</p>
+          <p class="text-xs text-gray-400 mt-0.5">Cuenta: {{ currentUserAccount() }}</p>
         </div>
 
-        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
-          <h3 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Sobre mí</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Estudiante universitario apasionado por compartir materiales académicos y apoyar a la comunidad UNAH.
-          </p>
-        </div>
-
-     
+        
         <div class="grid grid-cols-2 gap-3 mb-5">
           <div class="bg-[#17a2b8] text-white rounded-2xl p-4 text-center">
             <p class="text-2xl font-black">{{ myProductsSignal().length }}</p>
@@ -706,7 +894,6 @@
           </div>
         </div>
 
- 
         <button (click)="logout()"
                 class="w-full py-3 rounded-2xl bg-[#dc3545] hover:bg-[#c82333] text-white
                        font-bold text-sm transition-colors flex items-center justify-center gap-2">
@@ -720,6 +907,7 @@
 }
 
 
+<!-- ===================== MODAL: MENSAJERÍA ===================== -->
 @if (isMessagesOpen()) {
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeMessagesModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -729,7 +917,6 @@
 
       <div class="grid h-full" style="grid-template-columns: 280px 1fr;">
 
-     
         <div class="border-r flex flex-col h-full">
 
           <div class="p-4 border-b bg-white">
@@ -782,7 +969,6 @@
             }
           </div>
 
-          
           <div class="p-3 bg-gray-50 border-t">
             <p class="text-[11px] text-gray-500 flex items-center gap-1.5">
               {{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}
@@ -790,11 +976,9 @@
           </div>
         </div>
 
-        
         <div class="flex flex-col h-full bg-gray-50">
 
           @if (selectedChat()) {
-           
             <div class="flex items-center gap-3 px-5 py-4 bg-white border-b shadow-sm">
               <div class="relative">
                 <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
@@ -807,7 +991,6 @@
               </div>
             </div>
 
-           
             <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               @if (isLoadingMessages()) {
                 <p class="text-sm text-gray-400">Cargando mensajes...</p>
@@ -816,17 +999,17 @@
               } @else {
                 @for (msg of chatMessages(); track msg.idMessage) {
                   <div class="flex" [class.justify-end]="isMine(msg)" [class.justify-start]="!isMine(msg)">
-                  <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
-                       [class.bg-[#2E4C9E]]="isMine(msg)"
-                       [class.text-white]="isMine(msg)"
-                       [class.rounded-br-sm]="isMine(msg)"
-                       [class.bg-white]="!isMine(msg)"
-                       [class.text-gray-800]="!isMine(msg)"
-                       [class.rounded-bl-sm]="!isMine(msg)">
-                    <p>{{ msg.messageText }}</p>
-                    <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                    <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
+                         [class.bg-[#2E4C9E]]="isMine(msg)"
+                         [class.text-white]="isMine(msg)"
+                         [class.rounded-br-sm]="isMine(msg)"
+                         [class.bg-white]="!isMine(msg)"
+                         [class.text-gray-800]="!isMine(msg)"
+                         [class.rounded-bl-sm]="!isMine(msg)">
+                      <p>{{ msg.messageText }}</p>
+                      <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                    </div>
                   </div>
-                </div>
                 }
               }
             </div>
@@ -848,7 +1031,6 @@
             </div>
 
           } @else {
-           
             <div class="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div class="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                 <lucide-icon [name]="MessageCircle" class="w-10 h-10 text-[#2E4C9E]"></lucide-icon>
