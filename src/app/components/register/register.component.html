@@ -1,0 +1,226 @@
+<div class="flex min-h-screen w-full font-sans">
+  <!-- Lado izquierdo -->
+  <div class="hidden w-1/2 items-center justify-center bg-[#0033CC] lg:flex">
+    <div class="text-center">
+      <img 
+        src="assets/ayudapuma.png" 
+        alt="Ayuda PUMA" 
+        class="w-80 h-auto mx-auto mb-8"
+      />
+    </div>
+  </div>
+
+  <!-- Lado derecho -->
+  <div class="flex w-full items-center justify-center bg-white lg:w-1/2">
+    <div class="w-full max-w-md px-10 py-8">
+      <h1 class="mb-8 text-center text-3xl font-bold text-gray-800">Crear cuenta</h1>
+      
+      <p class="text-center text-gray-500 mb-6 text-sm">
+        ¿Ya tienes cuenta? 
+        <a routerLink="/login" class="text-[#2E4C9E] font-semibold hover:underline">Inicia sesión</a>
+      </p>
+
+      <!-- Mensaje de error -->
+      @if (error()) {
+        <div class="mb-6 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+          {{ error() }}
+        </div>
+      }
+
+      <!-- Mensaje de éxito -->
+      @if (success()) {
+        <div class="mb-6 rounded-md bg-green-50 p-3 text-sm text-green-600 border border-green-200">
+          {{ success() }}
+        </div>
+      }
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-5">
+        <!-- Tipo de usuario -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Tipo de usuario</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" formControlName="userType" value="student" class="w-4 h-4 text-[#2E4C9E]">
+              <span class="text-sm text-gray-700">Estudiante</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" formControlName="userType" value="employee" class="w-4 h-4 text-[#2E4C9E]">
+              <span class="text-sm text-gray-700">Empleado</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Nombres -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label for="firstName" class="block text-sm font-medium text-gray-700">
+              Primer nombre <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              formControlName="firstName"
+              class="input-puma"
+              [class.is-invalid]="firstName?.invalid && firstName?.touched"
+            />
+            @if (firstName?.invalid && firstName?.touched) {
+              <span class="text-xs text-red-500">
+                @if (firstName?.errors?.['required']) { Nombre requerido }
+                @if (firstName?.errors?.['minlength']) { Mínimo 2 caracteres }
+              </span>
+            }
+          </div>
+
+          <div class="space-y-2">
+            <label for="secondName" class="block text-sm font-medium text-gray-700">
+              Segundo nombre
+            </label>
+            <input
+              id="secondName"
+              type="text"
+              formControlName="secondName"
+              class="input-puma"
+            />
+          </div>
+        </div>
+
+        <!-- Apellidos -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label for="lastName" class="block text-sm font-medium text-gray-700">
+              Primer apellido <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              formControlName="lastName"
+              class="input-puma"
+              [class.is-invalid]="lastName?.invalid && lastName?.touched"
+            />
+            @if (lastName?.invalid && lastName?.touched) {
+              <span class="text-xs text-red-500">
+                @if (lastName?.errors?.['required']) { Apellido requerido }
+                @if (lastName?.errors?.['minlength']) { Mínimo 2 caracteres }
+              </span>
+            }
+          </div>
+
+          <div class="space-y-2">
+            <label for="secondLastName" class="block text-sm font-medium text-gray-700">
+              Segundo apellido
+            </label>
+            <input
+              id="secondLastName"
+              type="text"
+              formControlName="secondLastName"
+              class="input-puma"
+            />
+          </div>
+        </div>
+
+        <!-- Correo electrónico -->
+        <div class="space-y-2">
+          <label for="email" class="block text-sm font-medium text-gray-700">
+            Correo electrónico <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="nombre@ejemplo.com"
+            class="input-puma"
+            [class.is-invalid]="email?.invalid && email?.touched"
+          />
+          @if (email?.invalid && email?.touched) {
+            <span class="text-xs text-red-500">
+              @if (email?.errors?.['required']) { El correo es requerido }
+              @if (email?.errors?.['email']) { Ingresa un correo válido }
+            </span>
+          }
+        </div>
+
+        <!-- Teléfono -->
+        <div class="space-y-2">
+          <label for="phoneNumber" class="block text-sm font-medium text-gray-700">
+            Teléfono <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            formControlName="phoneNumber"
+            placeholder="9999-9999"
+            class="input-puma"
+            [class.is-invalid]="phoneNumber?.invalid && phoneNumber?.touched"
+          />
+          @if (phoneNumber?.invalid && phoneNumber?.touched) {
+            <span class="text-xs text-red-500">
+              @if (phoneNumber?.errors?.['required']) { El teléfono es requerido }
+              @if (phoneNumber?.errors?.['pattern']) { Formato: 9999-9999 }
+            </span>
+          }
+        </div>
+
+        <!-- Contraseña -->
+        <div class="space-y-2">
+          <label for="password" class="block text-sm font-medium text-gray-700">
+            Contraseña <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="••••••••"
+            class="input-puma"
+            [class.is-invalid]="password?.invalid && password?.touched"
+          />
+          @if (password?.invalid && password?.touched) {
+            <span class="text-xs text-red-500">
+              @if (password?.errors?.['required']) { La contraseña es requerida }
+              @if (password?.errors?.['minlength']) { Mínimo 6 caracteres }
+            </span>
+          }
+        </div>
+
+        <!-- Confirmar contraseña -->
+        <div class="space-y-2">
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+            Confirmar contraseña <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            formControlName="confirmPassword"
+            placeholder="••••••••"
+            class="input-puma"
+            [class.is-invalid]="confirmPassword?.invalid && confirmPassword?.touched"
+          />
+          @if (confirmPassword?.invalid && confirmPassword?.touched) {
+            <span class="text-xs text-red-500">
+              @if (confirmPassword?.errors?.['required']) { Confirmar contraseña es requerido }
+              @if (confirmPassword?.errors?.['mismatch']) { Las contraseñas no coinciden }
+            </span>
+          }
+        </div>
+
+        <!-- Botón de registro -->
+        <div class="flex justify-center pt-4">
+          <button
+            type="submit"
+            class="btn-register"
+            [disabled]="registerForm.invalid || loading()"
+          >
+            {{ loading() ? 'Registrando...' : 'Registrarme' }}
+          </button>
+        </div>
+
+        <!-- Términos y condiciones -->
+        <p class="text-center text-xs text-gray-400 mt-6">
+          Al registrarte, aceptas nuestros 
+          <a href="#" class="text-[#2E4C9E] hover:underline">Términos y Condiciones</a>
+          y nuestra 
+          <a href="#" class="text-[#2E4C9E] hover:underline">Política de Privacidad</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
