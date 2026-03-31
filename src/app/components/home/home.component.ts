@@ -33,13 +33,16 @@ import {
   Upload,
   MoreVertical,
   LogOut,
-  Send
+  Send,
+  Pencil,
+  Trash2
 } from 'lucide-angular';
 
 interface Product {
   id: number;
   title: string;
   image: string;
+  images?: string[];
   status: 'Venta' | 'Intercambio' | 'Donación';
   price: number;
   tags: string[];
@@ -106,6 +109,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly Grid3x3 = Grid3x3;
   readonly LogOut = LogOut;
   readonly Send = Send;
+  readonly Pencil = Pencil;
+  readonly Trash2 = Trash2;
 
   productsSignal = signal<Product[]>([]);
   myProductsSignal = signal<Product[]>([]);
@@ -126,10 +131,27 @@ export class HomeComponent implements OnInit, OnDestroy {
   imageUrls = signal<string[]>([]);
   uploadingCount = signal(0);
   isSaving = signal(false);
+  isDeleting = signal(false);
 
-  get isUploadingImage() {
-    return this.uploadingCount() > 0;
-  }
+  isEditDialogOpen = signal(false);
+  editingProduct = signal<Product | null>(null);
+  editImagePreviews = signal<string[]>([]);
+  editImageUrls = signal<string[]>([]);
+  editUploadingCount = signal(0);
+  isEditSaving = signal(false);
+
+  editProduct = signal({
+    title: '',
+    description: '',
+    status: 'Venta' as 'Venta' | 'Intercambio' | 'Donación',
+    price: '',
+    condition: 'Usado',
+    category: '',
+    career: '',
+  });
+
+  get isUploadingImage() { return this.uploadingCount() > 0; }
+  get isEditUploadingImage() { return this.editUploadingCount() > 0; }
 
   newProduct = signal({
     title: '',
@@ -156,7 +178,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   };
 
   isProfileOpen = signal(false);
-
   isMessagesOpen = signal(false);
   isLoadingChats = signal(false);
   isLoadingMessages = signal(false);
@@ -170,18 +191,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   filteredChats = computed(() => {
     const query = this.chatSearch().trim().toLowerCase();
     const chats = this.chats();
-
     if (!query) return chats;
-
     return chats.filter((chat) => {
       const name = chat.otherUserName.toLowerCase();
       const lastMessage = (chat.lastMessage || '').toLowerCase();
       const productName = chat.productName.toLowerCase();
-      return (
-        name.includes(query) ||
-        lastMessage.includes(query) ||
-        productName.includes(query)
-      );
+      return name.includes(query) || lastMessage.includes(query) || productName.includes(query);
     });
   });
 
@@ -207,7 +222,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId)) return;
-
     this.loadProducts();
     this.initializeChatConnection();
   }
@@ -222,22 +236,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!userId) return;
 
     this.chatEventsSubscription = this.chatSocketService.events$.subscribe((event) => {
-      if (event.type === 'connected') {
-        this.isSocketConnected.set(true);
-        return;
-      }
-
+      if (event.type === 'connected') { this.isSocketConnected.set(true); return; }
       if (event.type === 'chat_message' && event.payload) {
         this.isSocketConnected.set(true);
         this.applyIncomingMessage(event.payload as ChatMessage);
         return;
       }
-
-      if (
-        event.type === 'error' &&
-        event.message &&
-        (event.message.includes('cerró') || event.message.includes('conectar'))
-      ) {
+      if (event.type === 'error' && event.message &&
+          (event.message.includes('cerró') || event.message.includes('conectar'))) {
         this.isSocketConnected.set(false);
       }
     });
@@ -247,12 +253,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private getCurrentUser(): any {
     if (!isPlatformBrowser(this.platformId)) return {};
-
-    try {
-      return JSON.parse(localStorage.getItem('currentUser') || '{}');
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); }
+    catch { return {}; }
   }
 
   private getCurrentUserId() {
@@ -293,10 +295,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       (conversation) => conversation.idConversation === message.idConversation
     );
 
-    if (!existingConversation) {
-      this.loadChats(message.idConversation);
-      return;
-    }
+    if (!existingConversation) { this.loadChats(message.idConversation); return; }
 
     const updatedConversation: ChatConversation = {
       ...existingConversation,
@@ -324,10 +323,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         const mapped: Product[] = rawData.map((product: any) => ({
           id: product.idProduct,
           title: product.productName,
-          image:
-            product.images && product.images.length > 0 && product.images[0].imageUrl
-              ? product.images[0].imageUrl
-              : 'assets/productos/default.jpg',
+          image: product.images && product.images.length > 0 && product.images[0].imageUrl
+            ? product.images[0].imageUrl
+            : 'assets/productos/default.jpg',
+          // Guardamos todas las imágenes para mostrarlas en el modal
+          images: product.images
+            ? product.images.map((img: any) => img.imageUrl).filter(Boolean)
+            : [],
           status: (product.modalityName as Product['status']) ?? 'Venta',
           price: product.price,
           tags: [product.categoryName, product.conditionName].filter(Boolean),
@@ -343,7 +345,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
         const myId = Number(currentUserId);
         this.productsSignal.set(mapped);
-        this.myProductsSignal.set(mapped.filter((product) => !Number.isNaN(myId) && product.ownerId === myId));
+        this.myProductsSignal.set(
+          mapped.filter((product) => !Number.isNaN(myId) && product.ownerId === myId)
+        );
       },
       error: (err: any) => console.error('Error al conectar con la API:', err)
     });
@@ -353,44 +357,38 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.newProduct.update((product) => ({ ...product, [field]: value }));
   }
 
+  setEditProductField(field: string, value: any) {
+    this.editProduct.update((product) => ({ ...product, [field]: value }));
+  }
+
   clearImageAt(index: number) {
     this.imagePreviews.update((list) => list.filter((_, position) => position !== index));
     this.imageUrls.update((list) => list.filter((_, position) => position !== index));
   }
 
-  onTagsChange(value: string) {
-    const tags = value
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
+  clearEditImageAt(index: number) {
+    this.editImagePreviews.update((list) => list.filter((_, position) => position !== index));
+    this.editImageUrls.update((list) => list.filter((_, position) => position !== index));
+  }
 
+  onTagsChange(value: string) {
+    const tags = value.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
     this.newProduct.update((product) => ({ ...product, tags }));
   }
 
   filteredProducts = computed(() => {
     let result = this.productsSignal().filter((product) => {
-      const matchesSearch = product.title
-        .toLowerCase()
-        .includes(this.searchQuery().toLowerCase());
-      const matchesMaterial =
-        this.selectedMaterials().length === 0 ||
-        this.selectedMaterials().includes(product.category);
-      const matchesModality =
-        this.selectedModalities().length === 0 ||
-        this.selectedModalities().includes(product.status);
-      const matchesCareer =
-        this.selectedCareers().length === 0 ||
-        this.selectedCareers().includes(product.career) ||
-        product.career === 'Todas';
+      const matchesSearch = product.title.toLowerCase().includes(this.searchQuery().toLowerCase());
+      const matchesMaterial = this.selectedMaterials().length === 0 || this.selectedMaterials().includes(product.category);
+      const matchesModality = this.selectedModalities().length === 0 || this.selectedModalities().includes(product.status);
+      const matchesCareer = this.selectedCareers().length === 0 || this.selectedCareers().includes(product.career) || product.career === 'Todas';
       const matchesPrice = product.price <= this.priceRange();
-
       return matchesSearch && matchesMaterial && matchesModality && matchesCareer && matchesPrice;
     });
 
     if (this.showFavoritesOnly()) {
       result = result.filter((product) => this.favorites().includes(product.id));
     }
-
     return result;
   });
 
@@ -412,13 +410,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     return (product: Product) => !Number.isNaN(myId) && product.ownerId === myId;
   });
 
-  getStatusBg(status: string): string {
-    return this.statusColors[status]?.bg ?? 'bg-gray-100';
-  }
-
-  getStatusText(status: string): string {
-    return this.statusColors[status]?.text ?? 'text-gray-700';
-  }
+  getStatusBg(status: string): string { return this.statusColors[status]?.bg ?? 'bg-gray-100'; }
+  getStatusText(status: string): string { return this.statusColors[status]?.text ?? 'text-gray-700'; }
 
   toggleFavorite(event: Event, id: number) {
     event.stopPropagation();
@@ -429,17 +422,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   toggleFilter(type: 'material' | 'modality' | 'career', value: string) {
-    const targetSignal =
-      type === 'material'
-        ? this.selectedMaterials
-        : type === 'modality'
-          ? this.selectedModalities
-          : this.selectedCareers;
-
+    const targetSignal = type === 'material' ? this.selectedMaterials
+      : type === 'modality' ? this.selectedModalities
+      : this.selectedCareers;
     targetSignal.update((values) =>
       values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
     );
-
     this.currentPage.set(1);
     this.loadProducts();
   }
@@ -474,17 +462,176 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isAddDialogOpen.set(false);
     this.imagePreviews.set([]);
     this.imageUrls.set([]);
-    this.newProduct.set({
-      title: '',
-      description: '',
-      status: 'Venta',
-      price: '',
-      condition: 'Usado',
-      category: '',
-      career: '',
-      tags: []
-    });
+    this.newProduct.set({ title: '', description: '', status: 'Venta', price: '', condition: 'Usado', category: '', career: '', tags: [] });
     this.setBodyScroll(false);
+  }
+
+  openEditDialog(event: Event, product: Product) {
+    event.stopPropagation();
+    this.editingProduct.set(product);
+
+    const conditionTag = product.tags.find(t => t === 'Nuevo' || t === 'Usado') ?? 'Usado';
+
+    this.editProduct.set({
+      title: product.title,
+      description: product.description,
+      status: product.status,
+      price: product.price > 0 ? product.price.toString() : '',
+      condition: conditionTag,
+      category: product.category,
+      career: product.career,
+    });
+
+    // Precargar todas las imágenes existentes
+    const imgs = product.images && product.images.length > 0
+      ? product.images
+      : product.image ? [product.image] : [];
+
+    this.editImagePreviews.set([...imgs]);
+    this.editImageUrls.set([...imgs]);
+
+    this.isEditDialogOpen.set(true);
+    this.setBodyScroll(true);
+  }
+
+  closeEditDialog() {
+    this.isEditDialogOpen.set(false);
+    this.editingProduct.set(null);
+    this.editImagePreviews.set([]);
+    this.editImageUrls.set([]);
+    this.editUploadingCount.set(0);
+    this.setBodyScroll(false);
+  }
+
+  // ── Eliminar producto ─────────────────────────────────────────
+  confirmDelete(event: Event, product: Product) {
+    event.stopPropagation();
+    const confirmed = confirm(`¿Estás seguro de que deseas eliminar "${product.title}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    this.isDeleting.set(true);
+    const currentUser = this.getCurrentUser();
+
+    this.productService.deleteProduct(product.id, currentUser.idUser).subscribe({
+      next: (response: any) => {
+        this.isDeleting.set(false);
+        if (response?.hasError) {
+          alert('Error al eliminar: ' + (response.meta?.[0]?.message || 'Error desconocido'));
+          return;
+        }
+        // Eliminar localmente sin recargar
+        this.productsSignal.update(list => list.filter(p => p.id !== product.id));
+        this.myProductsSignal.update(list => list.filter(p => p.id !== product.id));
+        // Cerrar modal de detalle si estaba abierto
+        if (this.selectedProduct()?.id === product.id) this.closeDetail();
+      },
+      error: (err: any) => {
+        this.isDeleting.set(false);
+        console.error('Error al eliminar producto:', err);
+        alert('No se pudo eliminar el producto. Intenta de nuevo.');
+      }
+    });
+  }
+
+  onEditFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const remaining = 2 - this.editImageUrls().length;
+    if (remaining <= 0) { alert('Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
+
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = () => { this.editImagePreviews.update((list) => [...list, reader.result as string]); };
+    reader.readAsDataURL(file);
+
+    this.editUploadingCount.update((value) => value + 1);
+    const slotIndex = this.editImageUrls().length;
+
+    this.productService.uploadImage(file).subscribe({
+      next: (url: string) => {
+        this.editUploadingCount.update((value) => value - 1);
+        this.editImageUrls.update((list) => { const next = [...list]; next[slotIndex] = url; return next; });
+      },
+      error: () => {
+        this.editUploadingCount.update((value) => value - 1);
+        this.editImagePreviews.update((list) => list.slice(0, -1));
+        alert('Error al subir la imagen. Intenta de nuevo.');
+      }
+    });
+
+    input.value = '';
+  }
+
+  saveEditProduct() {
+    const product = this.editProduct();
+    const editing = this.editingProduct();
+    const currentUser = this.getCurrentUser();
+
+    if (!product.title.trim()) { alert('El título es obligatorio.'); return; }
+    if (!product.description.trim()) { alert('La descripción es obligatoria.'); return; }
+    if (!product.category) { alert('Selecciona una categoría.'); return; }
+    if (!product.condition) { alert('Selecciona una condición.'); return; }
+    if (this.isEditUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
+
+    const idModality = MODALITY_MAP[product.status];
+    const idCategory = CATEGORY_MAP[product.category];
+    const idCondition = CONDITION_MAP[product.condition];
+
+    if (!idModality || !idCategory || !idCondition) {
+      alert('Datos inválidos. Verifica modalidad, categoría y condición.');
+      return;
+    }
+
+    const payload = {
+      idProduct: editing!.id,
+      productName: product.title.trim(),
+      description: product.description.trim(),
+      price: product.price ? parseFloat(product.price) : 0,
+      idModality,
+      idCondition,
+      idCategory,
+      idStatus: 1,
+      idUser: currentUser.idUser,
+      images: this.editImageUrls().filter(Boolean).map((url) => ({ imageUrl: url }))
+    };
+
+    this.isEditSaving.set(true);
+
+    this.productService.saveProduct(payload).subscribe({
+      next: (response: any) => {
+        this.isEditSaving.set(false);
+
+        if (response?.hasError) {
+          alert('Error al actualizar: ' + (response.meta?.[0]?.message || 'Error desconocido'));
+          return;
+        }
+
+        const allImgs = this.editImageUrls().filter(Boolean);
+        const updatedProduct: Product = {
+          ...editing!,
+          title: product.title.trim(),
+          description: product.description.trim(),
+          status: product.status,
+          price: product.price ? parseFloat(product.price) : 0,
+          category: product.category,
+          tags: [product.category, product.condition].filter(Boolean),
+          image: allImgs[0] || editing!.image,
+          images: allImgs
+        };
+
+        this.myProductsSignal.update((list) => list.map((p) => (p.id === editing!.id ? updatedProduct : p)));
+        this.productsSignal.update((list) => list.map((p) => (p.id === editing!.id ? updatedProduct : p)));
+
+        this.closeEditDialog();
+        alert('Producto actualizado correctamente.');
+      },
+      error: (err: any) => {
+        this.isEditSaving.set(false);
+        console.error('Error al actualizar producto:', err);
+        alert('No se pudo conectar con el servidor.');
+      }
+    });
   }
 
   onFileSelected(event: Event) {
@@ -492,19 +639,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!input.files?.length) return;
 
     const remaining = 2 - this.imageUrls().length;
-    if (remaining <= 0) {
-      alert('Ya alcanzaste el máximo de 2 imágenes.');
-      input.value = '';
-      return;
-    }
+    if (remaining <= 0) { alert('Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
 
     const file = input.files[0];
     const reader = new FileReader();
-
-    reader.onload = () => {
-      this.imagePreviews.update((list) => [...list, reader.result as string]);
-    };
-
+    reader.onload = () => { this.imagePreviews.update((list) => [...list, reader.result as string]); };
     reader.readAsDataURL(file);
 
     this.uploadingCount.update((value) => value + 1);
@@ -513,11 +652,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.productService.uploadImage(file).subscribe({
       next: (url: string) => {
         this.uploadingCount.update((value) => value - 1);
-        this.imageUrls.update((list) => {
-          const next = [...list];
-          next[slotIndex] = url;
-          return next;
-        });
+        this.imageUrls.update((list) => { const next = [...list]; next[slotIndex] = url; return next; });
       },
       error: () => {
         this.uploadingCount.update((value) => value - 1);
@@ -533,30 +668,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     const product = this.newProduct();
     const currentUser = this.getCurrentUser();
 
-    if (!product.title.trim()) {
-      alert('El título es obligatorio.');
-      return;
-    }
-
-    if (!product.description.trim()) {
-      alert('La descripción es obligatoria.');
-      return;
-    }
-
-    if (!product.category) {
-      alert('Selecciona una categoría.');
-      return;
-    }
-
-    if (!product.condition) {
-      alert('Selecciona una condición.');
-      return;
-    }
-
-    if (this.isUploadingImage) {
-      alert('Espera a que las imágenes terminen de subirse.');
-      return;
-    }
+    if (!product.title.trim()) { alert('El título es obligatorio.'); return; }
+    if (!product.description.trim()) { alert('La descripción es obligatoria.'); return; }
+    if (!product.category) { alert('Selecciona una categoría.'); return; }
+    if (!product.condition) { alert('Selecciona una condición.'); return; }
+    if (this.isUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
 
     const idModality = MODALITY_MAP[product.status];
     const idCategory = CATEGORY_MAP[product.category];
@@ -591,10 +707,12 @@ export class HomeComponent implements OnInit, OnDestroy {
           return;
         }
 
+        const allImgs = this.imageUrls().filter(Boolean);
         const newMapped: Product = {
           id: response?.data?.idProduct ?? Date.now(),
           title: product.title.trim(),
-          image: this.imageUrls()[0] || 'assets/productos/default.jpg',
+          image: allImgs[0] || 'assets/productos/default.jpg',
+          images: allImgs,
           status: product.status,
           price: product.price ? parseFloat(product.price) : 0,
           tags: [product.category, product.condition].filter(Boolean),
@@ -622,21 +740,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  openProfileModal() {
-    this.isProfileOpen.set(true);
-    this.setBodyScroll(true);
-  }
-
-  closeProfileModal() {
-    this.isProfileOpen.set(false);
-    this.setBodyScroll(false);
-  }
+  openProfileModal() { this.isProfileOpen.set(true); this.setBodyScroll(true); }
+  closeProfileModal() { this.isProfileOpen.set(false); this.setBodyScroll(false); }
 
   logout() {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem('currentUser');
-    }
-
+    if (isPlatformBrowser(this.platformId)) localStorage.removeItem('currentUser');
     this.chatSocketService.disconnect();
     this.closeProfileModal();
     this.router.navigate(['/']);
@@ -665,11 +773,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.chatService.getUserConversations(userId).subscribe({
       next: (response) => {
         this.isLoadingChats.set(false);
-
-        if (response.hasError) {
-          alert(response.meta?.[0]?.message || 'No se pudieron cargar los chats.');
-          return;
-        }
+        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudieron cargar los chats.'); return; }
 
         const chats = this.sortChats(response.data ?? []);
         this.chats.set(chats);
@@ -677,13 +781,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         const targetConversationId = conversationToSelect ?? this.selectedChatId();
         if (!targetConversationId) return;
 
-        const targetConversation = chats.find(
-          (chat) => chat.idConversation === targetConversationId
-        );
-
-        if (targetConversation) {
-          this.selectChat(targetConversation);
-        }
+        const targetConversation = chats.find((chat) => chat.idConversation === targetConversationId);
+        if (targetConversation) this.selectChat(targetConversation);
       },
       error: (err) => {
         this.isLoadingChats.set(false);
@@ -708,12 +807,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.chatService.getConversationMessages(idConversation, userId).subscribe({
       next: (response) => {
         this.isLoadingMessages.set(false);
-
-        if (response.hasError) {
-          alert(response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.');
-          return;
-        }
-
+        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.'); return; }
         this.chatMessages.set(response.data ?? []);
       },
       error: (err) => {
@@ -726,25 +820,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   openChatFromProduct(product: Product, event?: Event) {
     event?.stopPropagation();
-
     const currentUserId = this.getCurrentUserId();
-    if (!currentUserId) {
-      alert('Debes iniciar sesión para contactar al vendedor.');
-      return;
-    }
-
-    if (product.ownerId === currentUserId) {
-      alert('No puedes abrir un chat con tu propia publicación.');
-      return;
-    }
+    if (!currentUserId) { alert('Debes iniciar sesión para contactar al vendedor.'); return; }
+    if (product.ownerId === currentUserId) { alert('No puedes abrir un chat con tu propia publicación.'); return; }
 
     this.chatService.openConversation(product.id, currentUserId).subscribe({
       next: (response) => {
-        if (response.hasError) {
-          alert(response.meta?.[0]?.message || 'No se pudo abrir el chat.');
-          return;
-        }
-
+        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudo abrir el chat.'); return; }
         const conversation = response.data;
         this.upsertConversation(conversation);
         this.selectedChatId.set(conversation.idConversation);
@@ -763,9 +845,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   sendMessage() {
     const text = this.newMessage().trim();
     const selectedChat = this.selectedChat();
-
     if (!text || !selectedChat) return;
-
     try {
       this.chatSocketService.sendMessage(selectedChat.idConversation, text);
       this.newMessage.set('');
@@ -777,24 +857,15 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   getChatPreviewTime(value: string | null) {
     if (!value) return 'Nuevo';
-
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
-
-    return date.toLocaleTimeString('es-HN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return date.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
   }
 
   getMessageTime(value: string) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
-
-    return date.toLocaleTimeString('es-HN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return date.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
   }
 
   isMine(message: ChatMessage) {
