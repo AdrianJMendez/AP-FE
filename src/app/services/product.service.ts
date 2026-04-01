@@ -24,11 +24,21 @@ export class ProductService {
     return this.http.post<any>(`${this.apiUrl}/products/save`, data);
   }
 
-
-  deleteProduct(idProduct: number, idUser: number) {
-    return this.http.post<any>(`${this.apiUrl}/products/delete`, { idProduct, idUser });
+  getMyProducts(page: number, idUser: number, idStatus: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/products/my-products`, {
+      page,
+      idUser,
+      idStatus
+    });
   }
 
+  changeStatus(idProduct: number, idUser: number, idStatus: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/products/change-status`, {
+      idProduct,
+      idUser,
+      idStatus
+    });
+  }
 
   uploadImage(file: File): Observable<string> {
     const form = new FormData();
@@ -54,15 +64,5 @@ export class ProductService {
 
   getHistory(page: number = 1, filter: 'Denegados' | 'Aprobados'): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/products/history/status/changes`, { page, filter });
-  }
-
-  changeStatus(idProduct: number, idStatus: number, description: string): Observable<any> {
-    // Se recomienda obtener el idUser del servicio de Auth, aquí usamos 1 por defecto
-    return this.http.post<any>(`${this.apiUrl}/products/change-status`, {
-      idProduct,
-      idUser: 1, 
-      idStatus,
-      description
-    });
   }
 }

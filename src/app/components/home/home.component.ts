@@ -44,6 +44,8 @@ interface Product {
   image: string;
   images?: string[];
   status: 'Venta' | 'Intercambio' | 'Donación';
+  idStatus?: number;
+  state?: 'Disponible' | 'Vendido' | 'Intercambiado' | 'Donado' | 'Inactivo' | 'En revisión';
   price: number;
   tags: string[];
   category: string;
@@ -77,6 +79,15 @@ const CATEGORY_MAP: Record<string, number> = {
 const CONDITION_MAP: Record<string, number> = {
   Nuevo: 1,
   Usado: 2
+};
+
+const PRODUCT_STATE_MAP: Record<number, string> = {
+  1: 'Disponible',
+  2: 'Vendido',
+  3: 'Intercambiado',
+  4: 'Donado',
+  5: 'Inactivo',
+  6: 'En revisión'
 };
 
 @Component({
@@ -125,6 +136,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   currentPage = signal(1);
   totalPagesFromServer = signal(1);
   currentMyPage = signal(1);
+  myStatusFilter = signal<number>(1); // 1: Disponible, 2: Vendido, ...
+  totalMyPagesFromServer = signal(1);
 
   isAddDialogOpen = signal(false);
   imagePreviews = signal<string[]>([]);
@@ -174,7 +187,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly statusColors: Record<string, { bg: string; text: string }> = {
     Venta: { bg: 'bg-green-100', text: 'text-green-700' },
     Donación: { bg: 'bg-blue-100', text: 'text-blue-700' },
-    Intercambio: { bg: 'bg-yellow-100', text: 'text-yellow-700' }
+    Intercambio: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    Disponible: { bg: 'bg-green-100', text: 'text-green-700' },
+    Vendido: { bg: 'bg-slate-100', text: 'text-slate-700' },
+    Intercambiado: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    Donado: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    Inactivo: { bg: 'bg-red-100', text: 'text-red-700' },
+    'En revisión': { bg: 'bg-gray-100', text: 'text-gray-700' }
   };
 
   isProfileOpen = signal(false);
@@ -223,6 +242,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId)) return;
     this.loadProducts();
+    this.loadMyProducts();
     this.initializeChatConnection();
   }
 
@@ -331,6 +351,8 @@ export class HomeComponent implements OnInit, OnDestroy {
             ? product.images.map((img: any) => img.imageUrl).filter(Boolean)
             : [],
           status: (product.modalityName as Product['status']) ?? 'Venta',
+          idStatus: Number(product.idStatus ?? 1),
+          state: PRODUCT_STATE_MAP[Number(product.idStatus ?? 1)] as Product['state'] || 'Disponible',
           price: product.price,
           tags: [product.categoryName, product.conditionName].filter(Boolean),
           category: product.categoryName || 'Otros',
@@ -343,13 +365,60 @@ export class HomeComponent implements OnInit, OnDestroy {
           messages: 0
         }));
 
-        const myId = Number(currentUserId);
         this.productsSignal.set(mapped);
-        this.myProductsSignal.set(
-          mapped.filter((product) => !Number.isNaN(myId) && product.ownerId === myId)
-        );
       },
       error: (err: any) => console.error('Error al conectar con la API:', err)
+    });
+  }
+
+  loadMyProducts(page: number = 1, status: number = this.myStatusFilter()) {
+    const userId = this.getCurrentUserId();
+    if (!userId) return;
+
+    this.currentMyPage.set(page);
+    this.myStatusFilter.set(status);
+
+    this.productService.getMyProducts(page, userId, status).subscribe({
+      next: (response: any) => {
+        const rawData = response.data || [];
+        this.totalMyPagesFromServer.set(response.meta?.[0]?.totalPages ?? 1);
+
+        const mapped: Product[] = rawData.map((product: any) => {
+          const statusId = Number(product.idStatus ?? 1);
+          const computedState = PRODUCT_STATE_MAP[statusId] as Product['state'] || 'Disponible';
+          const modality = (product.modalityName as Product['status']) ?? 'Venta';
+
+          return {
+            id: product.idProduct,
+            title: product.productName,
+            image: product.images && product.images.length > 0 && product.images[0].imageUrl
+              ? product.images[0].imageUrl
+              : 'assets/productos/default.jpg',
+            images: product.images
+              ? product.images.map((img: any) => img.imageUrl).filter(Boolean)
+              : [],
+            status: modality,
+            idStatus: statusId,
+            state: computedState,
+            price: product.price,
+            tags: [product.categoryName, product.conditionName].filter(Boolean),
+            category: product.categoryName || 'Otros',
+            career: 'Todas',
+            description: product.description,
+            owner: `${product.firstName} ${product.lastName}`.trim(),
+            ownerId: Number(product.idUser),
+            views: Math.floor(Math.random() * 100),
+            savedBy: Math.floor(Math.random() * 20),
+            messages: 0
+          };
+        });
+
+        this.myProductsSignal.set(mapped);
+      },
+      error: (err: any) => {
+        console.error('Error cargando mis productos:', err);
+        alert('No se pudieron cargar mis productos.');
+      }
     });
   }
 
@@ -401,14 +470,77 @@ export class HomeComponent implements OnInit, OnDestroy {
     return allProducts.slice(start, start + this.itemsPerPage);
   });
 
-  totalMyPages = computed(() =>
-    Math.ceil(this.myProductsSignal().length / this.itemsPerPage)
-  );
+  totalMyPages = computed(() => this.totalMyPagesFromServer());
 
   isMyProduct = computed(() => {
     const myId = this.getCurrentUserId();
     return (product: Product) => !Number.isNaN(myId) && product.ownerId === myId;
   });
+
+  getProductStatusAction(product: Product): { nextStatus: number; label: string } | null {
+    if (product.idStatus === 5) {
+      return null;
+    }
+
+    if (product.idStatus === 6) {
+      return { nextStatus: 5, label: 'Marcar como Inactivo' };
+    }
+
+    switch (product.status) {
+      case 'Venta':
+        return { nextStatus: 2, label: 'Marcar como Vendido' };
+      case 'Intercambio':
+        return { nextStatus: 3, label: 'Marcar como Intercambiado' };
+      case 'Donación':
+        return { nextStatus: 4, label: 'Marcar como Donado' };
+      default:
+        return { nextStatus: 5, label: 'Marcar como Inactivo' };
+    }
+  }
+
+  async changeProductStatus(event: Event, product: Product) {
+    event.stopPropagation();
+    const userId = this.getCurrentUserId();
+    if (!userId) { alert('Necesitas iniciar sesión.'); return; }
+
+    const action = this.getProductStatusAction(product);
+    if (!action) { alert('El producto ya no se puede actualizar.'); return; }
+
+    this.productService.changeStatus(product.id, userId, action.nextStatus).subscribe({
+      next: () => {
+        alert('Estado actualizado correctamente.');
+        this.loadMyProducts(this.currentMyPage(), this.myStatusFilter());
+        this.loadProducts();
+      },
+      error: (err: any) => {
+        console.error('Error al cambiar estado:', err);
+        alert('No se pudo actualizar el estado.');
+      }
+    });
+  }
+
+  deactivateProduct(event: Event, product: Product) {
+    event.stopPropagation();
+    const userId = this.getCurrentUserId();
+    if (!userId) { alert('Necesitas iniciar sesión.'); return; }
+
+    if (product.idStatus === 5) {
+      alert('El producto ya está inactivo.');
+      return;
+    }
+
+    this.productService.changeStatus(product.id, userId, 5).subscribe({
+      next: () => {
+        alert('Producto marcado como inactivo.');
+        this.loadMyProducts(this.currentMyPage(), this.myStatusFilter());
+        this.loadProducts();
+      },
+      error: (err: any) => {
+        console.error('Error al inactivar producto:', err);
+        alert('No se pudo inactivar el producto.');
+      }
+    });
+  }
 
   getStatusBg(status: string): string { return this.statusColors[status]?.bg ?? 'bg-gray-100'; }
   getStatusText(status: string): string { return this.statusColors[status]?.text ?? 'text-gray-700'; }
@@ -451,6 +583,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   setMyPage(page: number) {
     if (page < 1 || page > this.totalMyPages()) return;
     this.currentMyPage.set(page);
+    this.loadMyProducts(page, this.myStatusFilter());
+  }
+
+  setMyStatus(status: number) {
+    this.myStatusFilter.set(status);
+    this.currentMyPage.set(1);
+    this.loadMyProducts(1, status);
   }
 
   openAddDialog() {
@@ -506,31 +645,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   // ── Eliminar producto ─────────────────────────────────────────
   confirmDelete(event: Event, product: Product) {
     event.stopPropagation();
-    const confirmed = confirm(`¿Estás seguro de que deseas eliminar "${product.title}"? Esta acción no se puede deshacer.`);
+    const confirmed = confirm(`¿Estás seguro de que deseas poner en inactivo "${product.title}"?`);
     if (!confirmed) return;
 
-    this.isDeleting.set(true);
-    const currentUser = this.getCurrentUser();
-
-    this.productService.deleteProduct(product.id, currentUser.idUser).subscribe({
-      next: (response: any) => {
-        this.isDeleting.set(false);
-        if (response?.hasError) {
-          alert('Error al eliminar: ' + (response.meta?.[0]?.message || 'Error desconocido'));
-          return;
-        }
-        // Eliminar localmente sin recargar
-        this.productsSignal.update(list => list.filter(p => p.id !== product.id));
-        this.myProductsSignal.update(list => list.filter(p => p.id !== product.id));
-        // Cerrar modal de detalle si estaba abierto
-        if (this.selectedProduct()?.id === product.id) this.closeDetail();
-      },
-      error: (err: any) => {
-        this.isDeleting.set(false);
-        console.error('Error al eliminar producto:', err);
-        alert('No se pudo eliminar el producto. Intenta de nuevo.');
-      }
-    });
+    this.deactivateProduct(event, product);
   }
 
   onEditFileSelected(event: Event) {

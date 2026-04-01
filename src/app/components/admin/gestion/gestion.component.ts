@@ -60,10 +60,13 @@ export class GestionComponent implements OnInit {
     const pub = this.selectedPublication();
     if (!pub) return;
 
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const currentUserId = Number(currentUser?.idUser || 1);
+
     this.productService.changeStatus(
-      pub.idProduct, 
-      this.selectedStatus(), 
-      this.actionReason
+      pub.idProduct,
+      currentUserId,
+      this.selectedStatus()
     ).subscribe({
       next: () => {
         this.loadPending();

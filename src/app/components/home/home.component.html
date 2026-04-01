@@ -100,7 +100,7 @@
     <section class="flex-1 min-w-0">
 
       <div class="flex gap-8 border-b mb-6">
-        <button (click)="activeTab.set('todos'); currentPage.set(1)"
+        <button (click)="activeTab.set('todos'); currentPage.set(1); loadProducts()"
                 class="tab-btn"
                 [class.tab-active]="activeTab() === 'todos'"
                 [class.tab-inactive]="activeTab() !== 'todos'">
@@ -109,7 +109,7 @@
             <div class="absolute bottom-0 left-0 w-full h-1 bg-[#2E4C9E] rounded-full"></div>
           }
         </button>
-        <button (click)="activeTab.set('mis'); currentPage.set(1)"
+        <button (click)="activeTab.set('mis'); currentPage.set(1); loadMyProducts(1, myStatusFilter())"
                 class="tab-btn"
                 [class.tab-active]="activeTab() === 'mis'"
                 [class.tab-inactive]="activeTab() !== 'mis'">
@@ -261,6 +261,29 @@
 
       <!-- TAB: MIS PUBLICACIONES -->
       @if (activeTab() === 'mis') {
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button (click)="setMyStatus(1)"
+                  [class.font-bold]="myStatusFilter() === 1"
+                  class="px-3 py-2 rounded-lg border text-xs"
+                  >Disponible</button>
+          <button (click)="setMyStatus(2)"
+                  [class.font-bold]="myStatusFilter() === 2"
+                  class="px-3 py-2 rounded-lg border text-xs"
+                  >Vendido</button>
+          <button (click)="setMyStatus(3)"
+                  [class.font-bold]="myStatusFilter() === 3"
+                  class="px-3 py-2 rounded-lg border text-xs"
+                  >Intercambiado</button>
+          <button (click)="setMyStatus(4)"
+                  [class.font-bold]="myStatusFilter() === 4"
+                  class="px-3 py-2 rounded-lg border text-xs"
+                  >Donado</button>
+          <button (click)="setMyStatus(5)"
+                  [class.font-bold]="myStatusFilter() === 5"
+                  class="px-3 py-2 rounded-lg border text-xs"
+                  >Inactivo</button>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           @for (product of pagedMyProducts(); track product.id) {
             <div (click)="openDetail(product)"
@@ -268,8 +291,8 @@
               <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
                 <img [src]="product.image" [alt]="product.title"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <span class="status-badge {{ getStatusBg(product.status) }} {{ getStatusText(product.status) }} absolute top-4 left-4">
-                  {{ product.status }}
+                <span class="status-badge {{ getStatusBg(product.state ?? product.status) }} {{ getStatusText(product.state ?? product.status) }} absolute top-4 left-4">
+                  {{ product.state ?? product.status }}
                 </span>
                 <!-- Botón editar -->
                 <button (click)="openEditDialog($event, product)"
@@ -301,21 +324,17 @@
                     {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                   </span>
                   <div class="flex gap-2">
-                    <!-- Botón editar -->
-                    <button (click)="openEditDialog($event, product)"
+                    <button (click)="changeProductStatus($event, product)"
+                            [disabled]="!getProductStatusAction(product)"
                             class="py-2 px-3 bg-[#2E4C9E] text-white rounded-xl text-[10px]
                                    font-black uppercase hover:bg-blue-800 transition-colors flex items-center gap-1">
                       <lucide-icon [name]="Pencil" class="w-3 h-3"></lucide-icon>
-                      Editar
+                      {{ getProductStatusAction(product)?.label || 'No disponible' }}
                     </button>
-                    <!-- Botón eliminar -->
-                    <button (click)="confirmDelete($event, product)"
-                            [disabled]="isDeleting()"
+                    <button (click)="deactivateProduct($event, product)"
                             class="py-2 px-3 bg-red-500 text-white rounded-xl text-[10px]
-                                   font-black uppercase hover:bg-red-600 transition-colors flex items-center gap-1
-                                   disabled:opacity-50 disabled:cursor-not-allowed">
+                                   font-black uppercase hover:bg-red-600 transition-colors flex items-center gap-1">
                       <lucide-icon [name]="Trash2" class="w-3 h-3"></lucide-icon>
-                      Eliminar
                     </button>
                   </div>
                 </div>
