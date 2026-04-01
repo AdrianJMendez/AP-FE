@@ -11,6 +11,8 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { AlertService } from '../../shared/alert.service';
+import { AlertComponent } from '../../shared/alert.component';
 import { ProductService } from '../../services/product.service';
 import {
   ChatConversation,
@@ -93,7 +95,7 @@ const PRODUCT_STATE_MAP: Record<number, string> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, AlertComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
@@ -103,6 +105,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly chatSocketService = inject(ChatSocketService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
+  readonly alertService = inject(AlertService);
 
   private chatEventsSubscription?: Subscription;
 
@@ -136,7 +139,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   currentPage = signal(1);
   totalPagesFromServer = signal(1);
   currentMyPage = signal(1);
-  myStatusFilter = signal<number>(1); // 1: Disponible, 2: Vendido, ...
+  myStatusFilter = signal<number>(1);
   totalMyPagesFromServer = signal(1);
 
   isAddDialogOpen = signal(false);
@@ -346,7 +349,6 @@ export class HomeComponent implements OnInit, OnDestroy {
           image: product.images && product.images.length > 0 && product.images[0].imageUrl
             ? product.images[0].imageUrl
             : 'assets/productos/default.jpg',
-          // Guardamos todas las imágenes para mostrarlas en el modal
           images: product.images
             ? product.images.map((img: any) => img.imageUrl).filter(Boolean)
             : [],
@@ -417,7 +419,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         console.error('Error cargando mis productos:', err);
-        alert('No se pudieron cargar mis productos.');
+        this.alertService.error('Error', 'No se pudieron cargar mis productos.');
       }
     });
   }
@@ -478,43 +480,33 @@ export class HomeComponent implements OnInit, OnDestroy {
   });
 
   getProductStatusAction(product: Product): { nextStatus: number; label: string } | null {
-    if (product.idStatus === 5) {
-      return null;
-    }
-
-    if (product.idStatus === 6) {
-      return { nextStatus: 5, label: 'Marcar como Inactivo' };
-    }
-
+    if (product.idStatus === 5) return null;
+    if (product.idStatus === 6) return { nextStatus: 5, label: 'Marcar como Inactivo' };
     switch (product.status) {
-      case 'Venta':
-        return { nextStatus: 2, label: 'Marcar como Vendido' };
-      case 'Intercambio':
-        return { nextStatus: 3, label: 'Marcar como Intercambiado' };
-      case 'Donación':
-        return { nextStatus: 4, label: 'Marcar como Donado' };
-      default:
-        return { nextStatus: 5, label: 'Marcar como Inactivo' };
+      case 'Venta':       return { nextStatus: 2, label: 'Marcar como Vendido' };
+      case 'Intercambio': return { nextStatus: 3, label: 'Marcar como Intercambiado' };
+      case 'Donación':    return { nextStatus: 4, label: 'Marcar como Donado' };
+      default:            return { nextStatus: 5, label: 'Marcar como Inactivo' };
     }
   }
 
-  async changeProductStatus(event: Event, product: Product) {
+  changeProductStatus(event: Event, product: Product) {
     event.stopPropagation();
     const userId = this.getCurrentUserId();
-    if (!userId) { alert('Necesitas iniciar sesión.'); return; }
+    if (!userId) { this.alertService.warning('Atención', 'Necesitas iniciar sesión.'); return; }
 
     const action = this.getProductStatusAction(product);
-    if (!action) { alert('El producto ya no se puede actualizar.'); return; }
+    if (!action) { this.alertService.info('Info', 'El producto ya no se puede actualizar.'); return; }
 
     this.productService.changeStatus(product.id, userId, action.nextStatus).subscribe({
       next: () => {
-        alert('Estado actualizado correctamente.');
+        this.alertService.success('¡Listo!', 'Estado actualizado correctamente.');
         this.loadMyProducts(this.currentMyPage(), this.myStatusFilter());
         this.loadProducts();
       },
       error: (err: any) => {
         console.error('Error al cambiar estado:', err);
-        alert('No se pudo actualizar el estado.');
+        this.alertService.error('Error', 'No se pudo actualizar el estado.');
       }
     });
   }
@@ -522,24 +514,31 @@ export class HomeComponent implements OnInit, OnDestroy {
   deactivateProduct(event: Event, product: Product) {
     event.stopPropagation();
     const userId = this.getCurrentUserId();
-    if (!userId) { alert('Necesitas iniciar sesión.'); return; }
+    if (!userId) { this.alertService.warning('Atención', 'Necesitas iniciar sesión.'); return; }
 
     if (product.idStatus === 5) {
-      alert('El producto ya está inactivo.');
+      this.alertService.info('Info', 'El producto ya está inactivo.');
       return;
     }
 
-    this.productService.changeStatus(product.id, userId, 5).subscribe({
-      next: () => {
-        alert('Producto marcado como inactivo.');
-        this.loadMyProducts(this.currentMyPage(), this.myStatusFilter());
-        this.loadProducts();
-      },
-      error: (err: any) => {
-        console.error('Error al inactivar producto:', err);
-        alert('No se pudo inactivar el producto.');
+    this.alertService.confirm(
+      '¿Inactivar producto?',
+      `"${product.title}" será marcado como inactivo y dejará de aparecer en el catálogo.`,
+      () => {
+        this.productService.changeStatus(product.id, userId, 5).subscribe({
+          next: () => {
+            this.alertService.success('¡Listo!', 'Producto marcado como inactivo.');
+            this.loadMyProducts(this.currentMyPage(), this.myStatusFilter());
+            this.loadProducts();
+            if (this.selectedProduct()?.id === product.id) this.closeDetail();
+          },
+          error: (err: any) => {
+            console.error('Error al inactivar producto:', err);
+            this.alertService.error('Error', 'No se pudo inactivar el producto.');
+          }
+        });
       }
-    });
+    );
   }
 
   getStatusBg(status: string): string { return this.statusColors[status]?.bg ?? 'bg-gray-100'; }
@@ -608,9 +607,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   openEditDialog(event: Event, product: Product) {
     event.stopPropagation();
     this.editingProduct.set(product);
-
     const conditionTag = product.tags.find(t => t === 'Nuevo' || t === 'Usado') ?? 'Usado';
-
     this.editProduct.set({
       title: product.title,
       description: product.description,
@@ -620,15 +617,11 @@ export class HomeComponent implements OnInit, OnDestroy {
       category: product.category,
       career: product.career,
     });
-
-    // Precargar todas las imágenes existentes
     const imgs = product.images && product.images.length > 0
       ? product.images
       : product.image ? [product.image] : [];
-
     this.editImagePreviews.set([...imgs]);
     this.editImageUrls.set([...imgs]);
-
     this.isEditDialogOpen.set(true);
     this.setBodyScroll(true);
   }
@@ -642,30 +635,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.setBodyScroll(false);
   }
 
-  // ── Eliminar producto ─────────────────────────────────────────
   confirmDelete(event: Event, product: Product) {
     event.stopPropagation();
-    const confirmed = confirm(`¿Estás seguro de que deseas poner en inactivo "${product.title}"?`);
-    if (!confirmed) return;
-
     this.deactivateProduct(event, product);
   }
 
   onEditFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
-
     const remaining = 2 - this.editImageUrls().length;
-    if (remaining <= 0) { alert('Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
-
+    if (remaining <= 0) { this.alertService.warning('Límite alcanzado', 'Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = () => { this.editImagePreviews.update((list) => [...list, reader.result as string]); };
     reader.readAsDataURL(file);
-
     this.editUploadingCount.update((value) => value + 1);
     const slotIndex = this.editImageUrls().length;
-
     this.productService.uploadImage(file).subscribe({
       next: (url: string) => {
         this.editUploadingCount.update((value) => value - 1);
@@ -674,10 +659,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: () => {
         this.editUploadingCount.update((value) => value - 1);
         this.editImagePreviews.update((list) => list.slice(0, -1));
-        alert('Error al subir la imagen. Intenta de nuevo.');
+        this.alertService.error('Error', 'Error al subir la imagen. Intenta de nuevo.');
       }
     });
-
     input.value = '';
   }
 
@@ -685,46 +669,36 @@ export class HomeComponent implements OnInit, OnDestroy {
     const product = this.editProduct();
     const editing = this.editingProduct();
     const currentUser = this.getCurrentUser();
-
-    if (!product.title.trim()) { alert('El título es obligatorio.'); return; }
-    if (!product.description.trim()) { alert('La descripción es obligatoria.'); return; }
-    if (!product.category) { alert('Selecciona una categoría.'); return; }
-    if (!product.condition) { alert('Selecciona una condición.'); return; }
-    if (this.isEditUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
-
+    if (!product.title.trim()) { this.alertService.warning('Campo requerido', 'El título es obligatorio.'); return; }
+    if (!product.description.trim()) { this.alertService.warning('Campo requerido', 'La descripción es obligatoria.'); return; }
+    if (!product.category) { this.alertService.warning('Campo requerido', 'Selecciona una categoría.'); return; }
+    if (!product.condition) { this.alertService.warning('Campo requerido', 'Selecciona una condición.'); return; }
+    if (this.isEditUploadingImage) { this.alertService.info('Espera', 'Las imágenes todavía se están subiendo.'); return; }
     const idModality = MODALITY_MAP[product.status];
     const idCategory = CATEGORY_MAP[product.category];
     const idCondition = CONDITION_MAP[product.condition];
-
     if (!idModality || !idCategory || !idCondition) {
-      alert('Datos inválidos. Verifica modalidad, categoría y condición.');
+      this.alertService.error('Error', 'Datos inválidos. Verifica modalidad, categoría y condición.');
       return;
     }
-
     const payload = {
       idProduct: editing!.id,
       productName: product.title.trim(),
       description: product.description.trim(),
       price: product.price ? parseFloat(product.price) : 0,
-      idModality,
-      idCondition,
-      idCategory,
+      idModality, idCondition, idCategory,
       idStatus: 1,
       idUser: currentUser.idUser,
       images: this.editImageUrls().filter(Boolean).map((url) => ({ imageUrl: url }))
     };
-
     this.isEditSaving.set(true);
-
     this.productService.saveProduct(payload).subscribe({
       next: (response: any) => {
         this.isEditSaving.set(false);
-
         if (response?.hasError) {
-          alert('Error al actualizar: ' + (response.meta?.[0]?.message || 'Error desconocido'));
+          this.alertService.error('Error', response.meta?.[0]?.message || 'Error desconocido');
           return;
         }
-
         const allImgs = this.editImageUrls().filter(Boolean);
         const updatedProduct: Product = {
           ...editing!,
@@ -737,17 +711,15 @@ export class HomeComponent implements OnInit, OnDestroy {
           image: allImgs[0] || editing!.image,
           images: allImgs
         };
-
         this.myProductsSignal.update((list) => list.map((p) => (p.id === editing!.id ? updatedProduct : p)));
         this.productsSignal.update((list) => list.map((p) => (p.id === editing!.id ? updatedProduct : p)));
-
         this.closeEditDialog();
-        alert('Producto actualizado correctamente.');
+        this.alertService.success('¡Listo!', 'Producto actualizado correctamente.');
       },
       error: (err: any) => {
         this.isEditSaving.set(false);
         console.error('Error al actualizar producto:', err);
-        alert('No se pudo conectar con el servidor.');
+        this.alertService.error('Error', 'No se pudo conectar con el servidor.');
       }
     });
   }
@@ -755,18 +727,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
-
     const remaining = 2 - this.imageUrls().length;
-    if (remaining <= 0) { alert('Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
-
+    if (remaining <= 0) { this.alertService.warning('Límite alcanzado', 'Ya alcanzaste el máximo de 2 imágenes.'); input.value = ''; return; }
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = () => { this.imagePreviews.update((list) => [...list, reader.result as string]); };
     reader.readAsDataURL(file);
-
     this.uploadingCount.update((value) => value + 1);
     const slotIndex = this.imageUrls().length;
-
     this.productService.uploadImage(file).subscribe({
       next: (url: string) => {
         this.uploadingCount.update((value) => value - 1);
@@ -775,56 +743,45 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: () => {
         this.uploadingCount.update((value) => value - 1);
         this.imagePreviews.update((list) => list.slice(0, -1));
-        alert('Error al subir la imagen. Intenta de nuevo.');
+        this.alertService.error('Error', 'Error al subir la imagen. Intenta de nuevo.');
       }
     });
-
     input.value = '';
   }
 
   publishProduct() {
     const product = this.newProduct();
     const currentUser = this.getCurrentUser();
-
-    if (!product.title.trim()) { alert('El título es obligatorio.'); return; }
-    if (!product.description.trim()) { alert('La descripción es obligatoria.'); return; }
-    if (!product.category) { alert('Selecciona una categoría.'); return; }
-    if (!product.condition) { alert('Selecciona una condición.'); return; }
-    if (this.isUploadingImage) { alert('Espera a que las imágenes terminen de subirse.'); return; }
-
+    if (!product.title.trim()) { this.alertService.warning('Campo requerido', 'El título es obligatorio.'); return; }
+    if (!product.description.trim()) { this.alertService.warning('Campo requerido', 'La descripción es obligatoria.'); return; }
+    if (!product.category) { this.alertService.warning('Campo requerido', 'Selecciona una categoría.'); return; }
+    if (!product.condition) { this.alertService.warning('Campo requerido', 'Selecciona una condición.'); return; }
+    if (this.isUploadingImage) { this.alertService.info('Espera', 'Las imágenes todavía se están subiendo.'); return; }
     const idModality = MODALITY_MAP[product.status];
     const idCategory = CATEGORY_MAP[product.category];
     const idCondition = CONDITION_MAP[product.condition];
-
     if (!idModality || !idCategory || !idCondition) {
-      alert('Datos inválidos. Verifica modalidad, categoría y condición.');
+      this.alertService.error('Error', 'Datos inválidos. Verifica modalidad, categoría y condición.');
       return;
     }
-
     const payload = {
       idProduct: null,
       productName: product.title.trim(),
       description: product.description.trim(),
       price: product.price ? parseFloat(product.price) : 0,
-      idModality,
-      idCondition,
-      idCategory,
+      idModality, idCondition, idCategory,
       idStatus: 1,
       idUser: currentUser.idUser,
       images: this.imageUrls().map((url) => ({ imageUrl: url }))
     };
-
     this.isSaving.set(true);
-
     this.productService.saveProduct(payload).subscribe({
       next: (response: any) => {
         this.isSaving.set(false);
-
         if (response?.ok === false) {
-          alert(`Error al publicar: ${response.message || 'Error desconocido'}`);
+          this.alertService.error('Error', response.message || 'Error desconocido');
           return;
         }
-
         const allImgs = this.imageUrls().filter(Boolean);
         const newMapped: Product = {
           id: response?.data?.idProduct ?? Date.now(),
@@ -839,21 +796,18 @@ export class HomeComponent implements OnInit, OnDestroy {
           description: product.description.trim(),
           owner: `${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim(),
           ownerId: Number(currentUser.idUser),
-          views: 0,
-          savedBy: 0,
-          messages: 0
+          views: 0, savedBy: 0, messages: 0
         };
-
         this.productsSignal.update((list) => [newMapped, ...list]);
         this.myProductsSignal.update((list) => [newMapped, ...list]);
-
         this.closeAddDialog();
+        this.alertService.success('¡Publicado!', 'Tu producto ya está disponible en el catálogo.');
         this.loadProducts();
       },
       error: (err: any) => {
         this.isSaving.set(false);
         console.error('Error al publicar producto:', err);
-        alert('No se pudo conectar con el servidor.');
+        this.alertService.error('Error', 'No se pudo conectar con el servidor.');
       }
     });
   }
@@ -885,27 +839,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   loadChats(conversationToSelect?: number) {
     const userId = this.getCurrentUserId();
     if (!userId) return;
-
     this.isLoadingChats.set(true);
-
     this.chatService.getUserConversations(userId).subscribe({
       next: (response) => {
         this.isLoadingChats.set(false);
-        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudieron cargar los chats.'); return; }
-
+        if (response.hasError) { this.alertService.error('Error', response.meta?.[0]?.message || 'No se pudieron cargar los chats.'); return; }
         const chats = this.sortChats(response.data ?? []);
         this.chats.set(chats);
-
         const targetConversationId = conversationToSelect ?? this.selectedChatId();
         if (!targetConversationId) return;
-
         const targetConversation = chats.find((chat) => chat.idConversation === targetConversationId);
         if (targetConversation) this.selectChat(targetConversation);
       },
       error: (err) => {
         this.isLoadingChats.set(false);
         console.error('Error al cargar conversaciones:', err);
-        alert('No se pudieron cargar las conversaciones.');
+        this.alertService.error('Error', 'No se pudieron cargar las conversaciones.');
       }
     });
   }
@@ -919,19 +868,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   loadMessages(idConversation: number) {
     const userId = this.getCurrentUserId();
     if (!userId) return;
-
     this.isLoadingMessages.set(true);
-
     this.chatService.getConversationMessages(idConversation, userId).subscribe({
       next: (response) => {
         this.isLoadingMessages.set(false);
-        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.'); return; }
+        if (response.hasError) { this.alertService.error('Error', response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.'); return; }
         this.chatMessages.set(response.data ?? []);
       },
       error: (err) => {
         this.isLoadingMessages.set(false);
         console.error('Error al cargar mensajes:', err);
-        alert('No se pudieron cargar los mensajes.');
+        this.alertService.error('Error', 'No se pudieron cargar los mensajes.');
       }
     });
   }
@@ -939,12 +886,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   openChatFromProduct(product: Product, event?: Event) {
     event?.stopPropagation();
     const currentUserId = this.getCurrentUserId();
-    if (!currentUserId) { alert('Debes iniciar sesión para contactar al vendedor.'); return; }
-    if (product.ownerId === currentUserId) { alert('No puedes abrir un chat con tu propia publicación.'); return; }
-
+    if (!currentUserId) { this.alertService.warning('Atención', 'Debes iniciar sesión para contactar al vendedor.'); return; }
+    if (product.ownerId === currentUserId) { this.alertService.info('Info', 'No puedes abrir un chat con tu propia publicación.'); return; }
     this.chatService.openConversation(product.id, currentUserId).subscribe({
       next: (response) => {
-        if (response.hasError) { alert(response.meta?.[0]?.message || 'No se pudo abrir el chat.'); return; }
+        if (response.hasError) { this.alertService.error('Error', response.meta?.[0]?.message || 'No se pudo abrir el chat.'); return; }
         const conversation = response.data;
         this.upsertConversation(conversation);
         this.selectedChatId.set(conversation.idConversation);
@@ -955,7 +901,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error al abrir conversación:', err);
-        alert('No se pudo abrir la conversación.');
+        this.alertService.error('Error', 'No se pudo abrir la conversación.');
       }
     });
   }
@@ -969,7 +915,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.newMessage.set('');
     } catch (err: any) {
       console.error('Error al enviar mensaje:', err);
-      alert(err.message || 'No se pudo enviar el mensaje.');
+      this.alertService.error('Error', err.message || 'No se pudo enviar el mensaje.');
     }
   }
 
