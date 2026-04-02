@@ -1,18 +1,34 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
-import { RouterModule, Router } from '@angular/router'; // Añadido Router
 import { CommonModule } from '@angular/common';
-import { ProductService } from '../../services/product.service'; 
-import { LucideAngularModule, LayoutDashboard, FileText, Trash2, LogOut, Settings } from 'lucide-angular';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
+import {
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  LucideAngularModule,
+  Settings,
+  Trash2
+} from 'lucide-angular';
+import { ProductService } from '../../services/product.service';
+
+interface HistoryItemView {
+  idHistory: number;
+  product: string;
+  admin: string;
+  reason: string;
+  date: string;
+}
 
 @Component({
   selector: 'app-admin',
   standalone: true,
   imports: [CommonModule, LucideAngularModule, RouterModule],
-  templateUrl: './admin.component.html'
+  templateUrl: './admin.component.html',
+  styleUrl: './admin.component.css'
 })
 export class AdminComponent implements OnInit {
-  private productService = inject(ProductService);
-  private router = inject(Router); // Inyectamos el Router
+  private readonly productService = inject(ProductService);
+  private readonly router = inject(Router);
 
   readonly LayoutDashboard = LayoutDashboard;
   readonly FileText = FileText;
@@ -22,41 +38,78 @@ export class AdminComponent implements OnInit {
 
   totalProducts = signal(0);
   totalDeletions = signal(0);
-  deletionHistory = signal<any[]>([]);
+  historyItems = signal<HistoryItemView[]>([]);
+  activeTab = signal<'Denegados' | 'Aprobados'>('Denegados');
+  isLoadingMetrics = signal(false);
+  isLoadingHistory = signal(false);
 
   ngOnInit() {
     this.loadDashboard();
   }
 
-  // --- NUEVA FUNCIÓN LOGOUT ---
   logout() {
-    // Aquí puedes limpiar tokens si los tienes: localStorage.clear();
-    this.router.navigate(['/login']); // Cambia '/login' por tu ruta real de acceso
+    this.router.navigate(['/']);
   }
 
   loadDashboard() {
-    this.productService.getMetrics().subscribe({
-      next: (res: any) => {
-        if (res.data) {
-          this.totalProducts.set(res.data.totalAvailableProducts);
-          this.totalDeletions.set(res.data.totalInactivatedProducts);
-        }
-      },
-      error: (err) => console.error('Error en métricas:', err)
-    });
+    this.loadMetrics();
+    this.loadHistory();
+  }
 
-    this.productService.getHistory(1, 'Denegados').subscribe({
-      next: (res: any) => {
-        if (res.data) {
-          this.deletionHistory.set(res.data.map((item: any) => ({
+  private loadMetrics() {
+    this.isLoadingMetrics.set(true);
+
+    this.productService.getMetrics().subscribe({
+      next: (response: any) => {
+        this.isLoadingMetrics.set(false);
+
+        const metrics = response?.data;
+        this.totalProducts.set(metrics?.totalAvailableProducts ?? 0);
+        this.totalDeletions.set(metrics?.totalInactivatedProducts ?? 0);
+      },
+      error: (err) => {
+        this.isLoadingMetrics.set(false);
+        console.error('Error en métricas:', err);
+        this.totalProducts.set(0);
+        this.totalDeletions.set(0);
+      }
+    });
+  }
+
+  setHistoryTab(tab: 'Denegados' | 'Aprobados') {
+    if (this.activeTab() !== tab) {
+      this.activeTab.set(tab);
+      this.loadHistory();
+    }
+  }
+
+  private loadHistory() {
+    this.isLoadingHistory.set(true);
+
+    this.productService.getHistory(1, this.activeTab()).subscribe({
+      next: (response: any) => {
+        this.isLoadingHistory.set(false);
+
+        const rows = response?.data ?? [];
+        this.historyItems.set(
+          rows.map((item: any) => ({
+            idHistory: item.idHistory,
             product: item.productName,
             admin: item.employeeName,
-            reason: item.description || 'Sin motivo especificado',
-            date: item.changedAt 
-          })));
-        }
+            reason:
+              item.description ??
+              item.reason ??
+              item.moderationDescription ??
+              'Sin descripción registrada',
+            date: item.changedAt
+          }))
+        );
       },
-      error: (err) => console.error('Error en historial:', err)
+      error: (err) => {
+        this.isLoadingHistory.set(false);
+        console.error('Error en historial:', err);
+        this.historyItems.set([]);
+      }
     });
   }
 }

@@ -19,7 +19,7 @@
   <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
     <div class="mb-8">
       <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Panel de Administración</h2>
-      <p class="text-gray-500 mt-1">Métricas en tiempo real de la plataforma</p>
+      <p class="text-gray-500 mt-1">Métricas en tiempo real y revisiones moderadas</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -29,7 +29,7 @@
         </div>
         <div>
           <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Productos Disponibles</p>
-          <h3 class="text-4xl font-black text-gray-800">{{ totalProducts() }}</h3>
+          <h3 class="text-4xl font-black text-gray-800">{{ isLoadingMetrics() ? '...' : totalProducts() }}</h3>
         </div>
       </div>
 
@@ -39,34 +39,62 @@
         </div>
         <div>
           <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Productos Inactivados</p>
-          <h3 class="text-4xl font-black text-gray-800">{{ totalDeletions() }}</h3>
+          <h3 class="text-4xl font-black text-gray-800">{{ isLoadingMetrics() ? '...' : totalDeletions() }}</h3>
         </div>
       </div>
     </div>
 
     <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-      <div class="p-6 border-b border-gray-50 flex justify-between items-center">
-        <h3 class="text-lg font-bold text-gray-800">Historial de Denegaciones (Últimos 15)</h3>
+      <div class="p-6 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h3 class="text-lg font-bold text-gray-800">Historial de Revisiones</h3>
+        <div class="flex bg-gray-100 p-1 rounded-xl">
+          <button (click)="setHistoryTab('Denegados')" 
+                  [class.bg-white]="activeTab() === 'Denegados'" 
+                  [class.shadow-sm]="activeTab() === 'Denegados'"
+                  [class.text-gray-800]="activeTab() === 'Denegados'"
+                  [class.text-gray-500]="activeTab() !== 'Denegados'"
+                  class="px-4 py-2 rounded-lg text-sm font-bold transition-all">
+            Denegados
+          </button>
+          <button (click)="setHistoryTab('Aprobados')" 
+                  [class.bg-white]="activeTab() === 'Aprobados'" 
+                  [class.shadow-sm]="activeTab() === 'Aprobados'"
+                  [class.text-gray-800]="activeTab() === 'Aprobados'"
+                  [class.text-gray-500]="activeTab() !== 'Aprobados'"
+                  class="px-4 py-2 rounded-lg text-sm font-bold transition-all">
+            Aprobados
+          </button>
+        </div>
       </div>
-      
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-50/50 text-[11px] uppercase tracking-widest text-gray-400 font-bold">
               <th class="px-6 py-4">Producto</th>
               <th class="px-6 py-4">Moderador</th>
-              <th class="px-6 py-4">Razón</th>
+              <th class="px-6 py-4">Razón / Comentario</th>
               <th class="px-6 py-4 text-right">Fecha</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            @for (item of deletionHistory(); track item.date) {
-              <tr class="hover:bg-blue-50/30 transition-colors">
-                <td class="px-6 py-5 font-semibold text-gray-700 text-sm">{{ item.product }}</td>
-                <td class="px-6 py-5 text-gray-600 text-sm">{{ item.admin }}</td>
-                <td class="px-6 py-5 text-gray-500 text-sm max-w-xs italic leading-relaxed">"{{ item.reason }}"</td>
-                <td class="px-6 py-5 text-right text-gray-400 text-xs font-medium">{{ item.date }}</td>
+            @if (isLoadingHistory()) {
+              <tr>
+                <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">Cargando historial...</td>
               </tr>
+            } @else {
+              @for (item of historyItems(); track item.idHistory) {
+                <tr class="hover:bg-blue-50/30 transition-colors">
+                  <td class="px-6 py-5 font-semibold text-gray-700 text-sm">{{ item.product }}</td>
+                  <td class="px-6 py-5 text-gray-600 text-sm">{{ item.admin }}</td>
+                  <td class="px-6 py-5 text-gray-500 text-sm max-w-xs italic leading-relaxed">"{{ item.reason }}"</td>
+                  <td class="px-6 py-5 text-right text-gray-400 text-xs font-medium">{{ item.date | date:'dd/MM/yyyy HH:mm' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No hay revisiones en esta categoría.</td>
+                </tr>
+              }
             }
           </tbody>
         </table>

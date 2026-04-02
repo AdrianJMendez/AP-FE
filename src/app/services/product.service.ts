@@ -32,12 +32,23 @@ export class ProductService {
     });
   }
 
-  changeStatus(idProduct: number, idUser: number, idStatus: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/products/change-status`, {
+  changeStatus(
+    idProduct: number,
+    idUser: number,
+    idStatus: number,
+    description?: string
+  ): Observable<any> {
+    const payload: Record<string, unknown> = {
       idProduct,
       idUser,
       idStatus
-    });
+    };
+
+    if (description !== undefined) {
+      payload['description'] = description;
+    }
+
+    return this.http.put<any>(`${this.apiUrl}/products/change-status`, payload);
   }
 
   uploadImage(file: File): Observable<string> {
@@ -58,11 +69,15 @@ export class ProductService {
   }
 
   getRequestedProducts(page: number = 1): Observable<any> {
-    // Ajustado al body { page: n } que pide el backend
-    return this.http.post<any>(`${this.apiUrl}/products/requested`, { page });
+    return this.http.get<any>(`${this.apiUrl}/products/requested`, { params: { page: page.toString() } });
   }
 
   getHistory(page: number = 1, filter: 'Denegados' | 'Aprobados'): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/products/history/status/changes`, { page, filter });
+    return this.http.request('POST', `${this.apiUrl}/products/history/status/changes`, {
+      body: {
+        page: page,
+        filter: filter
+      }
+    });
   }
 }
