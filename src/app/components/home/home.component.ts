@@ -134,6 +134,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   activeTab = signal<'todos' | 'mis'>('todos');
   selectedProduct = signal<Product | null>(null);
   priceRange = signal<number>(15000);
+  priceRangeLimit = signal<number>(15000);
   viewMode = signal<'grid' | 'list'>('grid');
 
   currentPage = signal(1);
@@ -186,6 +187,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   favorites = signal<number[]>([]);
 
   readonly itemsPerPage = 9;
+  readonly myProductStatuses = [
+    { id: 1, label: 'Disponible' },
+    { id: 2, label: 'Vendido' },
+    { id: 3, label: 'Intercambiado' },
+    { id: 4, label: 'Donado' },
+    { id: 5, label: 'Inactivo' },
+    { id: 6, label: 'En revisión' }
+  ];
 
   readonly statusColors: Record<string, { bg: string; text: string }> = {
     Venta: { bg: 'bg-green-100', text: 'text-green-700' },
@@ -342,8 +351,18 @@ export class HomeComponent implements OnInit, OnDestroy {
         const currentUser = this.getCurrentUser();
         const rawData = response.data || [];
         const currentUserId = currentUser?.idUser;
+        const previousPriceLimit = this.priceRangeLimit();
+        const nextPriceLimit = rawData.reduce(
+          (max: number, product: any) => Math.max(max, Number(product.price) || 0),
+          15000
+        );
 
         this.totalPagesFromServer.set(response.meta?.[0]?.totalPages ?? 1);
+        this.priceRangeLimit.set(nextPriceLimit);
+
+        if (this.priceRange() >= previousPriceLimit) {
+          this.priceRange.set(nextPriceLimit);
+        }
 
         const mapped: Product[] = rawData.map((product: any) => ({
           id: product.idProduct,
@@ -803,7 +822,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.productsSignal.update((list) => [newMapped, ...list]);
         this.myProductsSignal.update((list) => [newMapped, ...list]);
         this.closeAddDialog();
-        this.alertService.success('¡Publicado!', 'Tu producto ya está disponible en el catálogo.');
+        this.alertService.success('¡Publicado!', 'Tu producto ha sido guardado correctamente y esta en revision.');
         this.loadProducts();
       },
       error: (err: any) => {

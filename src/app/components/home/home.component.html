@@ -79,7 +79,7 @@
           }
         </div>
         <h4 class="filter-label mt-8">Precio Máximo</h4>
-        <input type="range" min="0" max="15000" step="100"
+        <input type="range" min="0" [max]="priceRangeLimit()" step="100"
                [ngModel]="priceRange()"
                (ngModelChange)="priceRange.set($event)"
                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#2E4C9E]" />
@@ -130,7 +130,7 @@
       @if (activeTab() === 'todos') {
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @for (product of pagedProducts(); track product.id) {
+            @for (product of pagedProducts(); track product.id + '-' + $index) {
               <div (click)="openDetail(product)" class="product-card flex flex-col h-full group">
                 <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
                   <img [src]="product.image" [alt]="product.title"
@@ -168,7 +168,7 @@
 
         @if (viewMode() === 'list') {
           <div class="flex flex-col gap-4">
-            @for (product of pagedProducts(); track product.id) {
+            @for (product of pagedProducts(); track product.id + '-' + $index) {
               <div (click)="openDetail(product)"
                    class="bg-white rounded-2xl shadow-sm border border-gray-100 flex overflow-hidden
                           hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer group">
@@ -237,7 +237,7 @@
       <!-- TAB: MIS PUBLICACIONES -->
       @if (activeTab() === 'mis') {
         <div class="flex flex-wrap gap-2 mb-4">
-          @for (f of [{id:1,label:'Disponible'},{id:2,label:'Vendido'},{id:3,label:'Intercambiado'},{id:4,label:'Donado'},{id:5,label:'Inactivo'}]; track f.id) {
+          @for (f of myProductStatuses; track f.id) {
             <button (click)="setMyStatus(f.id)"
                     [class.bg-[#2E4C9E]]="myStatusFilter() === f.id"
                     [class.text-white]="myStatusFilter() === f.id"
@@ -249,7 +249,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (product of pagedMyProducts(); track product.id) {
+          @for (product of pagedMyProducts(); track product.id + '-' + $index) {
             <div (click)="openDetail(product)" class="product-card flex flex-col h-full group cursor-pointer">
               <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
                 <img [src]="product.image" [alt]="product.title"
