@@ -1,25 +1,25 @@
 <div class="flex min-h-screen w-full font-sans">
   <div class="hidden w-1/2 items-center justify-center bg-[#0033CC] lg:flex">
-    <img 
-      src="assets/ayudapuma.png" 
-      alt="Ayuda PUMA" 
-      class="w-80 h-auto"
+    <img
+      src="assets/ayudapuma.png"
+      alt="Ayuda PUMA"
+      class="h-auto w-80"
     />
   </div>
 
   <div class="flex w-full items-center justify-center bg-white lg:w-1/2">
     <div class="w-full max-w-md px-10">
-      <h1 class="mb-12 text-center text-4xl font-normal text-gray-800">Iniciar sesión</h1>
+      <h1 class="mb-12 text-center text-4xl font-normal text-gray-800">Iniciar sesion</h1>
 
       @if (error()) {
-        <div class="mb-6 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+        <div class="mb-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           {{ error() }}
         </div>
       }
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-8">
         <div class="space-y-2">
-          <label for="email" class="block text-base font-medium text-gray-700">Correo:</label>
+          <label for="email" class="block text-base font-medium text-gray-700">Correo</label>
           <input
             id="email"
             type="email"
@@ -31,13 +31,13 @@
           @if (email?.invalid && email?.touched) {
             <span class="text-xs text-red-500">
               @if (email?.errors?.['required']) { El correo es requerido }
-              @if (email?.errors?.['email']) { Ingresa un correo válido }
+              @if (email?.errors?.['email']) { Ingresa un correo valido }
             </span>
           }
         </div>
 
         <div class="space-y-2">
-          <label for="password" class="block text-base font-medium text-gray-700">Contraseña:</label>
+          <label for="password" class="block text-base font-medium text-gray-700">Contrasena</label>
           <input
             id="password"
             type="password"
@@ -48,10 +48,12 @@
           />
           @if (password?.invalid && password?.touched) {
             <span class="text-xs text-red-500">
-              @if (password?.errors?.['required']) { La contraseña es requerida }
+              @if (password?.errors?.['required']) { La contrasena es requerida }
             </span>
           }
         </div>
+
+     
 
         <div class="flex justify-center pt-6">
           <button
@@ -63,13 +65,14 @@
           </button>
         </div>
 
-        <div class="text-center mt-6">
+        <div class="mt-6 space-y-3 text-center">
           <p class="text-sm text-gray-600">
-            ¿No tienes cuenta? 
-            <a routerLink="/register" class="text-[#2E4C9E] font-semibold hover:underline">
-              Regístrate aquí
+            Aun no tienes cuenta?
+            <a routerLink="/register" class="font-semibold text-[#2E4C9E] hover:underline">
+              Registrate aqui
             </a>
           </p>
+         
         </div>
       </form>
     </div>

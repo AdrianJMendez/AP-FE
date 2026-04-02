@@ -10,16 +10,29 @@
         <button routerLink="/admin/gestion" class="text-blue-100 hover:text-white transition-colors font-medium">Gestionar Publicaciones</button>
         <button (click)="logout()" class="flex items-center gap-2 bg-red-500/10 hover:bg-red-500 px-4 py-2 rounded-lg transition-all border border-red-500/20 text-sm">
           <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
-          Cerrar Sesión
+          Cerrar Sesion
         </button>
       </nav>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Panel de Administración</h2>
-      <p class="text-gray-500 mt-1">Métricas en tiempo real y revisiones moderadas</p>
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Panel de Administracion</h2>
+        <p class="text-gray-500 mt-1">Metricas en tiempo real y revisiones moderadas</p>
+      </div>
+
+      <a
+        [routerLink]="employeeRegistrationRoute"
+        class="inline-flex max-w-sm flex-col rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        <span class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Acceso interno</span>
+        <span class="mt-2 text-lg font-bold text-slate-900">Registrar empleado</span>
+        <span class="mt-1 text-sm leading-6 text-slate-600">
+          Este enlace abre el formulario reservado para cuentas de personal administrativo.
+        </span>
+      </a>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -48,16 +61,16 @@
       <div class="p-6 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h3 class="text-lg font-bold text-gray-800">Historial de Revisiones</h3>
         <div class="flex bg-gray-100 p-1 rounded-xl">
-          <button (click)="setHistoryTab('Denegados')" 
-                  [class.bg-white]="activeTab() === 'Denegados'" 
+          <button (click)="setHistoryTab('Denegados')"
+                  [class.bg-white]="activeTab() === 'Denegados'"
                   [class.shadow-sm]="activeTab() === 'Denegados'"
                   [class.text-gray-800]="activeTab() === 'Denegados'"
                   [class.text-gray-500]="activeTab() !== 'Denegados'"
                   class="px-4 py-2 rounded-lg text-sm font-bold transition-all">
             Denegados
           </button>
-          <button (click)="setHistoryTab('Aprobados')" 
-                  [class.bg-white]="activeTab() === 'Aprobados'" 
+          <button (click)="setHistoryTab('Aprobados')"
+                  [class.bg-white]="activeTab() === 'Aprobados'"
                   [class.shadow-sm]="activeTab() === 'Aprobados'"
                   [class.text-gray-800]="activeTab() === 'Aprobados'"
                   [class.text-gray-500]="activeTab() !== 'Aprobados'"
@@ -73,7 +86,7 @@
             <tr class="bg-gray-50/50 text-[11px] uppercase tracking-widest text-gray-400 font-bold">
               <th class="px-6 py-4">Producto</th>
               <th class="px-6 py-4">Moderador</th>
-              <th class="px-6 py-4">Razón / Comentario</th>
+              <th class="px-6 py-4">Razon / Comentario</th>
               <th class="px-6 py-4 text-right">Fecha</th>
             </tr>
           </thead>
@@ -92,7 +105,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No hay revisiones en esta categoría.</td>
+                  <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No hay revisiones en esta categoria.</td>
                 </tr>
               }
             }
@@ -111,14 +124,14 @@
       <div>
         <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Servicios</h4>
         <ul class="text-sm space-y-2">
-          <li>Donación de Materiales</li>
+          <li>Donacion de Materiales</li>
           <li>Compra y Venta</li>
-          <li>Préstamos</li>
+          <li>Prestamos</li>
           <li>Intercambios</li>
         </ul>
       </div>
       <div>
-        <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Contáctanos</h4>
+        <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Contactanos</h4>
         <ul class="text-sm space-y-2">
           <li>WhatsApp: 3334-56-08</li>
           <li>contacto.ayudapuma@unah.edu.hn</li>

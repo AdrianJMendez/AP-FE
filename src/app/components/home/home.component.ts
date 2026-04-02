@@ -228,13 +228,15 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   currentUserName = computed(() => {
     const user = this.getCurrentUser();
-    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    const name = `${user.fullName ?? ''}`.trim() || `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
     return name || 'Usuario';
   });
 
   currentUserAccount = computed(() => {
     const user = this.getCurrentUser();
-    return user.accountNumber ?? user.idUser?.toString() ?? '';
+    if (user.userType === 'student') return 'Estudiante';
+    if (user.userType === 'employee') return 'Empleado';
+    return user.accountNumber ?? user.phoneNumber ?? user.idUser?.toString() ?? '';
   });
 
   currentUserEmail = computed(() => {

@@ -9,6 +9,8 @@ import {
   Settings,
   Trash2
 } from 'lucide-angular';
+import { environment } from '../../../environments/environment';
+import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
 
 interface HistoryItemView {
@@ -29,12 +31,14 @@ interface HistoryItemView {
 export class AdminComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   readonly LayoutDashboard = LayoutDashboard;
   readonly FileText = FileText;
   readonly Trash2 = Trash2;
   readonly LogOut = LogOut;
   readonly Settings = Settings;
+  readonly employeeRegistrationRoute = ['/', environment.employeeRegistrationPath];
 
   totalProducts = signal(0);
   totalDeletions = signal(0);
@@ -48,7 +52,8 @@ export class AdminComponent implements OnInit {
   }
 
   logout() {
-    this.router.navigate(['/']);
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   loadDashboard() {
@@ -69,7 +74,7 @@ export class AdminComponent implements OnInit {
       },
       error: (err) => {
         this.isLoadingMetrics.set(false);
-        console.error('Error en métricas:', err);
+        console.error('Error en metricas:', err);
         this.totalProducts.set(0);
         this.totalDeletions.set(0);
       }
@@ -100,7 +105,7 @@ export class AdminComponent implements OnInit {
               item.description ??
               item.reason ??
               item.moderationDescription ??
-              'Sin descripción registrada',
+              'Sin descripcion registrada',
             date: item.changedAt
           }))
         );

@@ -1,6 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiMeta } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface UserRegister {
   firstName: string;
@@ -16,13 +18,25 @@ export interface UserRegister {
 export interface RegisterResponse {
   data: {
     idUser: number;
-    userType: string;
+    userType: 'student' | 'employee';
+    email: string | null;
+    verificationExpiresAt: string | null;
+    emailSent: boolean;
   };
-  meta: Array<{
-    status: number;
-    message: string;
-    criticity: number;
-  }>;
+  meta: ApiMeta[];
+  hasError: boolean;
+}
+
+export interface VerificationResponse {
+  data: {
+    idUser: number;
+    email: string;
+    userType: 'student' | 'employee';
+    isEmailVerified?: boolean;
+    expiresAt?: string;
+    emailSent?: boolean;
+  };
+  meta: ApiMeta[];
   hasError: boolean;
 }
 
@@ -30,11 +44,23 @@ export interface RegisterResponse {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = '/users/register';
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/users`;
 
-  constructor(private http: HttpClient) {}
+  register(userData: UserRegister, userType: 'student' | 'employee'): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.apiUrl}/register/${userType}`, userData);
+  }
 
-  register(userData: UserRegister): Observable<RegisterResponse> {
-    return this.http.post<RegisterResponse>(this.apiUrl, userData);
+  verifyEmail(email: string, code: string): Observable<VerificationResponse> {
+    return this.http.post<VerificationResponse>(`${this.apiUrl}/verify-email`, {
+      email,
+      code
+    });
+  }
+
+  resendVerificationCode(email: string): Observable<VerificationResponse> {
+    return this.http.post<VerificationResponse>(`${this.apiUrl}/resend-verification-code`, {
+      email
+    });
   }
 }

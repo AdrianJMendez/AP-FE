@@ -1,8 +1,28 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { UserService, UserRegister } from '../../services/user.service';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { AlertService } from '../../shared/alert.service';
+import { UserRegister, UserService } from '../../services/user.service';
+
+type UserType = 'student' | 'employee';
+
+interface RegisterViewConfig {
+  userType: UserType;
+  badge: string;
+  title: string;
+  subtitle: string;
+  helper: string;
+  submitLabel: string;
+}
 
 @Component({
   selector: 'app-register',
@@ -12,103 +32,149 @@ import { UserService, UserRegister } from '../../services/user.service';
   styleUrl: './register.component.css'
 })
 export class RegisterComponent {
-  private fb = inject(FormBuilder);
-  private router = inject(Router);
-  private userService = inject(UserService);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly userService = inject(UserService);
+  private readonly alertService = inject(AlertService);
 
-  loading = signal<boolean>(false);
-  error = signal<string | null>(null);
-  success = signal<string | null>(null);
+  readonly viewConfig = signal<RegisterViewConfig>(this.resolveViewConfig());
+  readonly loading = signal<boolean>(false);
+  readonly error = signal<string | null>(null);
 
-  // Formulario de registro
-  registerForm: FormGroup = this.fb.group({
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    secondName: [''],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
-    secondLastName: [''],
-    email: ['', [Validators.required, Validators.email]],
-    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{4}-[0-9]{4}$/)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required]],
-    userType: ['student', [Validators.required]]
-  }, {
-    validators: this.passwordMatchValidator
-  });
-
-  // Confirmar contraseña
-  passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password')?.value;
-    const confirmPassword = form.get('confirmPassword')?.value;
-    
-    if (password !== confirmPassword) {
-      form.get('confirmPassword')?.setErrors({ mismatch: true });
-      return { mismatch: true };
+  readonly registerForm: FormGroup = this.fb.group(
+    {
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      secondName: [''],
+      lastName: ['', [Validators.required, Validators.minLength(2)]],
+      secondLastName: [''],
+      email: ['', [Validators.required, Validators.email]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{4}-[0-9]{4}$/)]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]],
+    },
+    {
+      validators: this.passwordMatchValidator(),
     }
-    return null;
+  );
+
+  get firstName() {
+    return this.registerForm.get('firstName');
+  }
+
+  get secondName() {
+    return this.registerForm.get('secondName');
+  }
+
+  get lastName() {
+    return this.registerForm.get('lastName');
+  }
+
+  get secondLastName() {
+    return this.registerForm.get('secondLastName');
+  }
+
+  get email() {
+    return this.registerForm.get('email');
+  }
+
+  get phoneNumber() {
+    return this.registerForm.get('phoneNumber');
+  }
+
+  get password() {
+    return this.registerForm.get('password');
+  }
+
+  get confirmPassword() {
+    return this.registerForm.get('confirmPassword');
   }
 
   onSubmit(): void {
     if (this.registerForm.invalid) {
-      this.error.set('Por favor completa correctamente todos los campos');
+      this.registerForm.markAllAsTouched();
+      this.error.set('Por favor completa correctamente todos los campos.');
       return;
     }
 
     this.loading.set(true);
     this.error.set(null);
-    this.success.set(null);
 
-    // Preparar datos para enviar al backend
-    const userData: UserRegister = {
-      firstName: this.registerForm.get('firstName')?.value,
-      secondName: this.registerForm.get('secondName')?.value || '',
-      lastName: this.registerForm.get('lastName')?.value,
-      secondLastName: this.registerForm.get('secondLastName')?.value || '',
-      email: this.registerForm.get('email')?.value,
-      phoneNumber: this.registerForm.get('phoneNumber')?.value,
-      password: this.registerForm.get('password')?.value,
-      userType: this.registerForm.get('userType')?.value
+    const payload: UserRegister = {
+      firstName: String(this.firstName?.value ?? '').trim(),
+      secondName: String(this.secondName?.value ?? '').trim(),
+      lastName: String(this.lastName?.value ?? '').trim(),
+      secondLastName: String(this.secondLastName?.value ?? '').trim(),
+      email: String(this.email?.value ?? '').trim().toLowerCase(),
+      phoneNumber: String(this.phoneNumber?.value ?? '').trim(),
+      password: String(this.password?.value ?? ''),
+      userType: this.viewConfig().userType,
     };
 
-    console.log('Enviando registro:', userData); // Para debug
-
-    this.userService.register(userData).subscribe({
+    this.userService.register(payload, this.viewConfig().userType).subscribe({
       next: (response) => {
         this.loading.set(false);
-        
+
         if (!response.hasError && response.meta[0]?.status === 201) {
-          this.success.set(response.meta[0]?.message || 'Usuario registrado exitosamente');
-          
-          // Redirigir al login después de 2 segundos
-          setTimeout(() => {
-            this.router.navigate(['/login']);
-          }, 2000);
-        } else {
-          this.error.set(response.meta[0]?.message || 'Error en el registro');
+          const message = response.meta[0]?.message || 'Cuenta creada correctamente.';
+          if (response.data.emailSent) {
+            this.alertService.success('Cuenta creada', message);
+          } else {
+            this.alertService.warning('Cuenta creada', message);
+          }
+
+          this.router.navigate(['/verify-email'], {
+            queryParams: {
+              email: payload.email,
+              userType: this.viewConfig().userType,
+            },
+          });
+          return;
         }
+
+        this.error.set(response.meta[0]?.message || 'No fue posible completar el registro.');
       },
       error: (err) => {
         this.loading.set(false);
-        console.error('Error en registro:', err);
-        
-        if (err.status === 409) {
-          this.error.set('El correo electrónico ya está registrado');
-        } else if (err.status === 400) {
-          this.error.set('Datos inválidos. Verifica la información');
-        } else {
-          this.error.set('Error de conexión con el servidor');
-        }
+        this.error.set(err.error?.meta?.[0]?.message || 'Error de conexion con el servidor.');
       }
     });
   }
 
-  // Getters
-  get firstName() { return this.registerForm.get('firstName'); }
-  get secondName() { return this.registerForm.get('secondName'); }
-  get lastName() { return this.registerForm.get('lastName'); }
-  get secondLastName() { return this.registerForm.get('secondLastName'); }
-  get email() { return this.registerForm.get('email'); }
-  get phoneNumber() { return this.registerForm.get('phoneNumber'); }
-  get password() { return this.registerForm.get('password'); }
-  get confirmPassword() { return this.registerForm.get('confirmPassword'); }
-  get userType() { return this.registerForm.get('userType'); }
+  private resolveViewConfig(): RegisterViewConfig {
+    const userType = (this.route.snapshot.data['userType'] as UserType | undefined) || 'student';
+
+    if (userType === 'employee') {
+      return {
+        userType,
+        badge: 'Acceso interno',
+        title: 'Registro de empleados',
+        subtitle: 'Este acceso queda reservado para altas internas hechas desde el panel administrativo.',
+        helper: 'La cuenta se crea como empleado y debera verificar su correo antes de iniciar sesion.',
+        submitLabel: 'Crear cuenta de empleado',
+      };
+    }
+
+    return {
+      userType,
+      badge: 'Cuenta estudiantil',
+      title: 'Crea tu cuenta en Ayuda PUMA',
+      subtitle: 'Publica, dona o intercambia materiales con otros estudiantes en nuestra plataforma.',
+      helper: 'El registro publico siempre crea cuentas de estudiante y luego solicita verificar el correo.',
+      submitLabel: 'Crear mi cuenta',
+    };
+  }
+
+  private passwordMatchValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const password = control.get('password')?.value;
+      const confirmPassword = control.get('confirmPassword')?.value;
+
+      if (!password || !confirmPassword) {
+        return null;
+      }
+
+      return password === confirmPassword ? null : { mismatch: true };
+    };
+  }
 }

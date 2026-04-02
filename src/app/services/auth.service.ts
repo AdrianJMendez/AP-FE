@@ -2,27 +2,50 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export interface ApiMeta {
+  status: number;
+  message: string;
+  criticity: number;
+  code?: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
+export interface AuthenticatedUser {
+  idUser?: number;
+  idPerson?: number;
+  email?: string;
+  firstName?: string;
+  secondName?: string;
+  lastName?: string;
+  secondLastName?: string;
+  fullName?: string;
+  phoneNumber?: string;
+  userType?: 'student' | 'employee';
+  isEmployee?: boolean;
+  isStudent?: boolean;
+  verificationRequired?: boolean;
+}
+
 export interface LoginResponse {
-  token?: string;
-  message?: string;
+  data: AuthenticatedUser;
+  meta: ApiMeta[];
+  hasError: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = '/auth/login';
+  private readonly apiUrl = '/auth/login';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   login(email: string, password: string): Observable<LoginResponse> {
-    const loginData: LoginRequest = { email, password };
-    return this.http.post<LoginResponse>(this.apiUrl, loginData);
+    return this.http.post<LoginResponse>(this.apiUrl, { email, password });
   }
 
   setToken(token: string): void {
@@ -42,16 +65,18 @@ export class AuthService {
     localStorage.removeItem('currentUser');
   }
 
-  setCurrentUser(data: any): void {
+  setCurrentUser(data: AuthenticatedUser): void {
     localStorage.setItem('currentUser', JSON.stringify(data));
   }
 
-  getCurrentUser(): { idUser?: number; isEmployee?: boolean; isStudent?: boolean } | null {
+  getCurrentUser(): AuthenticatedUser | null {
     const raw = localStorage.getItem('currentUser');
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
 
     try {
-      return JSON.parse(raw);
+      return JSON.parse(raw) as AuthenticatedUser;
     } catch {
       return null;
     }
@@ -66,12 +91,10 @@ export class AuthService {
   }
 
   hasAdminAccess(): boolean {
-    // Preferencia: si es empleado (incluso si también es estudiante), acceso admin.
     return this.isEmployee();
   }
 
   hasHomeAccess(): boolean {
-    // El estudiante o empleado puede ver home.
     return this.isStudent() || this.isEmployee();
   }
 }
