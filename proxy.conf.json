@@ -1,37 +1,37 @@
 {
   "/auth": {
-    "target": "http://127.0.0.1:3000",
+    "target": "http://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/users": {
-    "target": "http://127.0.0.1:3000",
+    "target": "http://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/products": {
-    "target": "http://127.0.0.1:3000",
+    "target": "http://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/chats": {
-    "target": "http://127.0.0.1:3000",
+    "target": "http://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/ws": {
-    "target": "ws://127.0.0.1:3000",
+    "target": "ws://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "ws": true,
     "logLevel": "debug"
   },
   "/upload": {
-    "target": "http://127.0.0.1:3000",
+    "target": "http://18.217.173.90:3000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"

@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000',
-  wsUrl: 'ws://localhost:3000/ws',
+  apiUrl: 'http://18.217.173.90:3000',
+  wsUrl: 'ws://18.217.173.90:3000/ws',
   cloudinaryCloudName: 'dnq0o27zh',
   cloudinaryUploadPreset: 'ayuda_puma',
   employeeRegistrationPath: 'staff-access-ayudapuma-2026',

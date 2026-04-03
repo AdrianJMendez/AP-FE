@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/ap-fe",
+  "framework": "angular",
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "redirects": [
+    {
+      "source": "/health",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
+}
