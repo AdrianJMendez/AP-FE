@@ -1,0 +1,56 @@
+<div class="verify-shell">
+  <div class="verify-card">
+    <p class="verify-badge">Verificacion de correo</p>
+    <h1 class="verify-title">Activa tu cuenta con el codigo temporal</h1>
+    <p class="verify-subtitle">
+      Cuando termines tu registro, el sistema envia un codigo a tu correo. Aqui puedes ingresarlo o pedir uno nuevo si el anterior ya vencio.
+    </p>
+
+    @if (error()) {
+      <div class="verify-message verify-message--error">
+        {{ error() }}
+      </div>
+    }
+
+    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="verify-form">
+      <div class="verify-field">
+        <label for="email">Correo electronico</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="verify-input"
+          placeholder="nombre@correo.com"
+        />
+      </div>
+
+      <div class="verify-field">
+        <label for="code">Codigo de verificacion</label>
+        <input
+          id="code"
+          type="text"
+          formControlName="code"
+          class="verify-input verify-input--code"
+          placeholder="000000"
+          maxlength="6"
+        />
+      </div>
+
+      <button type="submit" class="verify-button" [disabled]="verifyForm.invalid || loading()">
+        {{ loading() ? 'Verificando...' : 'Verificar correo' }}
+      </button>
+    </form>
+
+    <div class="verify-actions">
+      <button
+        type="button"
+        class="verify-link-button"
+        (click)="resendCode()"
+        [disabled]="resendLoading()"
+      >
+        {{ resendLoading() ? 'Generando...' : 'Reenviar codigo' }}
+      </button>
+      <a routerLink="/login" class="verify-link">Volver al login</a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,143 @@
+.register-shell {
+  @apply min-h-screen bg-slate-950 text-slate-100 lg:grid lg:grid-cols-[1.1fr_0.9fr];
+  background-image:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.28), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.16), transparent 28%),
+    linear-gradient(145deg, #020617 0%, #0f172a 45%, #172554 100%);
+}
+
+.register-hero {
+  @apply relative flex flex-col justify-start gap-6 overflow-hidden px-6 py-10 sm:px-10 lg:px-14 lg:py-14;
+}
+
+.register-hero__badge {
+  @apply inline-flex w-fit rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-100 backdrop-blur;
+}
+
+.register-hero__logo {
+  @apply h-auto w-40 drop-shadow-2xl sm:w-48;
+}
+
+.register-hero__title {
+  @apply max-w-xl text-4xl font-black leading-tight text-white sm:text-5xl;
+}
+
+.register-hero__subtitle {
+  @apply max-w-xl text-base leading-7 text-slate-200 sm:text-lg;
+}
+
+.register-hero__panel {
+  @apply max-w-xl rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md;
+}
+
+.register-hero__panel-label {
+  @apply mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200;
+}
+
+.register-hero__panel-text {
+  @apply text-sm leading-7 text-slate-100;
+}
+
+.register-hero__stats {
+  @apply grid gap-3 sm:grid-cols-3;
+}
+
+.register-hero__stat {
+  @apply rounded-[1.6rem] border border-white/10 bg-slate-900/50 px-5 py-4 backdrop-blur;
+}
+
+.register-hero__stat-value {
+  @apply block text-lg font-black text-white;
+}
+
+.register-hero__stat-label {
+  @apply mt-1 block text-xs uppercase tracking-[0.18em] text-slate-300;
+}
+
+.register-panel {
+  @apply flex items-center justify-center bg-white px-4 py-8 text-slate-900 sm:px-6 lg:px-10;
+}
+
+.register-card {
+  @apply w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.18)] sm:p-8;
+}
+
+.register-card__header {
+  @apply mb-8 flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-end sm:justify-between;
+}
+
+.register-card__eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.28em] text-sky-700;
+}
+
+.register-card__title {
+  @apply mt-2 text-3xl font-black text-slate-950;
+}
+
+.register-card__link {
+  @apply text-sm font-semibold text-slate-500 transition hover:text-sky-700;
+}
+
+.register-message {
+  @apply mb-6 rounded-2xl border px-4 py-3 text-sm;
+}
+
+.register-message--error {
+  @apply border-red-200 bg-red-50 text-red-700;
+}
+
+.register-form {
+  @apply space-y-6;
+}
+
+.register-grid {
+  @apply grid gap-5 md:grid-cols-2;
+}
+
+.register-grid--contact {
+  @apply md:grid-cols-[1.35fr_0.65fr];
+}
+
+.register-field {
+  @apply flex flex-col gap-2;
+}
+
+.register-field label {
+  @apply text-sm font-semibold text-slate-700;
+}
+
+.register-input {
+  @apply w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition;
+}
+
+.register-input:focus {
+  @apply border-sky-400 bg-white ring-4 ring-sky-500/10;
+}
+
+.register-input--invalid {
+  @apply border-red-300 bg-red-50/60;
+}
+
+.register-error {
+  @apply text-xs font-medium text-red-500;
+}
+
+.register-card__footer {
+  @apply flex flex-col gap-5 rounded-[1.75rem] border border-slate-200 bg-slate-50 px-5 py-5;
+}
+
+.register-card__disclaimer {
+  @apply text-sm leading-6 text-slate-600;
+}
+
+.register-button {
+  @apply inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-6 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition;
+}
+
+.register-button:hover:not(:disabled) {
+  @apply -translate-y-0.5 bg-sky-700 shadow-xl;
+}
+
+.register-button:disabled {
+  @apply cursor-not-allowed opacity-50;
+}

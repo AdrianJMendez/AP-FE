@@ -1,25 +1,14 @@
-<div class="min-h-screen bg-gray-50 flex flex-col animate-fade-in font-sans">
-
+<div class="font-sans">
+  <div class="min-h-screen bg-gray-50 flex flex-col animate-fade-in relative">
   <header class="px-6 py-4 text-white shadow-lg bg-[#2E4C9E]">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-4 cursor-pointer" routerLink="/admin">
         <span class="bg-white text-[#2E4C9E] font-bold px-3 py-1 rounded-lg text-sm">AP</span>
         <h1 class="text-xl font-bold tracking-tight uppercase">Ayuda Puma</h1>
       </div>
-
       <nav class="flex items-center gap-8">
-        <button 
-          routerLink="/admin" 
-          class="text-blue-100 hover:text-white transition-colors font-medium">
-          Panel
-        </button>
-        
-        <button 
-          routerLink="/admin/gestion" 
-          class="px-4 py-2 bg-white/10 rounded-lg font-medium border border-white/20">
-          Gestionar Publicaciones
-        </button>
-
+        <button routerLink="/admin" class="text-blue-100 hover:text-white transition-colors font-medium">Panel</button>
+        <button routerLink="/admin/gestion" class="px-4 py-2 bg-white/10 rounded-lg font-medium border border-white/20">Gestionar Publicaciones</button>
         <button (click)="logout()" class="flex items-center gap-2 bg-red-500/10 hover:bg-red-500 px-4 py-2 rounded-lg transition-all border border-red-500/20 text-sm">
           <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
           Cerrar Sesión
@@ -29,97 +18,94 @@
   </header>
 
   <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
-    
     <div class="mb-8">
       <h2 class="text-3xl font-bold text-gray-800 tracking-tight">Gestión de Inventario</h2>
-      <p class="text-gray-500 mt-1 font-medium">Control de disponibilidad y moderación de anuncios</p>
+      <p class="text-gray-500 mt-1 font-medium">Revisión de publicaciones pendientes por aprobar</p>
     </div>
 
     <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
       <div class="p-6 border-b border-gray-50 flex items-center justify-between">
-        <h3 class="text-lg font-bold text-gray-800">Publicaciones del Sistema</h3>
-        <span class="px-3 py-1 bg-blue-50 text-[#2E4C9E] text-[11px] font-bold rounded-full border border-blue-100">
-          {{ publications().length }} Ítems
+        <h3 class="text-lg font-bold text-gray-800">Solicitudes Pendientes</h3>
+        <span class="px-3 py-1 bg-blue-50 text-[#2E4C9E] text-[11px] font-bold rounded-full border border-blue-100 uppercase tracking-widest">
+          Página {{ currentPage() }} de {{ totalPages() }}
         </span>
       </div>
-      
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-50/50 text-[11px] uppercase tracking-widest text-gray-400 font-bold">
               <th class="px-6 py-4">Información del Producto</th>
               <th class="px-6 py-4">Vendedor</th>
-              <th class="px-6 py-4 text-center">Fecha</th>
-              <th class="px-6 py-4 text-center">Disponibilidad</th>
-              <th class="px-6 py-4 text-center">Moderación</th>
+              <th class="px-6 py-4 text-center">Fecha Solicitud</th>
+              <th class="px-6 py-4 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            @for (pub of publications(); track pub.id) {
-              <tr class="hover:bg-blue-50/30 transition-colors group">
-                <td class="px-6 py-5">
-                  <div class="flex flex-col">
-                    <span class="font-semibold text-gray-700 text-sm uppercase tracking-tight">{{ pub.title }}</span>
-                    <span class="text-[10px] text-[#2E4C9E] font-bold uppercase mt-0.5">{{ pub.category }} — {{ pub.price }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-5 text-gray-600 text-sm font-medium">{{ pub.user }}</td>
-                <td class="px-6 py-5 text-center text-gray-400 text-xs font-bold">{{ pub.date }}</td>
-                
-                <td class="px-6 py-5">
-                  <div class="flex justify-center">
-                    <span [ngClass]="{
-                      'bg-green-50 text-green-600 border-green-100': pub.status === 'Disponible',
-                      'bg-amber-50 text-amber-600 border-amber-100': pub.status === 'Reservado',
-                      'bg-blue-50 text-blue-600 border-blue-100': pub.status === 'Donado'
-                    }" class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border">
-                      {{ pub.status }}
-                    </span>
-                  </div>
-                </td>
-
-                <td class="px-6 py-5">
-                  <div class="flex items-center justify-center gap-2">
-                    
-                    <button class="p-2 text-gray-300 hover:text-[#2E4C9E] hover:bg-blue-50 rounded-xl transition-all" title="Ver detalles">
-                      <lucide-icon [name]="Eye" class="w-5 h-5"></lucide-icon>
-                    </button>
-
-                    <div class="w-px h-6 bg-gray-100 mx-1"></div>
-
-                    <button 
-                      (click)="toggleApproval(pub.id, true)"
-                      [disabled]="pub.isApproved"
-                      [class.opacity-20]="pub.isApproved"
-                      class="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all" 
-                      title="Aprobar">
-                      <lucide-icon [name]="CheckCircle" class="w-6 h-6"></lucide-icon>
-                    </button>
-
-                    <button 
-                      (click)="toggleApproval(pub.id, false)"
-                      [disabled]="!pub.isApproved"
-                      [class.opacity-20]="!pub.isApproved"
-                      class="p-2 text-amber-600 hover:bg-amber-50 rounded-xl transition-all" 
-                      title="Quitar aprobación">
-                      <lucide-icon [name]="XCircle" class="w-6 h-6"></lucide-icon>
-                    </button>
-
-                    <div class="w-px h-6 bg-gray-100 mx-1"></div>
-
-                    <button 
-                      (click)="deletePublication(pub.id)"
-                      class="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" 
-                      title="Eliminar de DB">
-                      <lucide-icon [name]="Trash2" class="w-5 h-5"></lucide-icon>
-                    </button>
-                  </div>
-                </td>
+            @if (isLoading()) {
+              <tr>
+                <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">Cargando publicaciones pendientes...</td>
               </tr>
+            } @else {
+              @for (pub of publications(); track pub.idProduct) {
+                <tr class="hover:bg-blue-50/30 transition-colors group">
+                  <td class="px-6 py-5">
+                    <div class="flex items-center gap-4">
+                      <img [src]="getPrimaryImage(pub)" [alt]="pub.productName" class="w-14 h-14 rounded-2xl object-cover border border-gray-100 bg-gray-50">
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-semibold text-gray-700 text-sm uppercase tracking-tight truncate">{{ pub.productName }}</span>
+                        <span class="text-[10px] text-[#2E4C9E] font-bold uppercase mt-0.5">
+                          {{ pub.categoryName }} · {{ pub.modalityName }} · {{ getPriceLabel(pub.price) }}
+                        </span>
+                        <span class="text-xs text-gray-400 truncate mt-1">{{ pub.conditionName }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-5 text-gray-600 text-sm font-medium">{{ pub.firstName }} {{ pub.lastName }}</td>
+                  <td class="px-6 py-5 text-center text-gray-400 text-xs font-bold">{{ pub.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="px-6 py-5">
+                    <div class="flex items-center justify-center gap-2">
+                      <button (click)="openDetail(pub)" class="action-btn text-slate-600 hover:bg-slate-50 border-slate-100" title="Ver detalle">
+                        <lucide-icon [name]="Eye" class="w-5 h-5"></lucide-icon>
+                      </button>
+                      <button (click)="openStatusModal(pub, 1)" class="action-btn text-green-600 hover:bg-green-50 border-green-100" title="Aprobar">
+                        <lucide-icon [name]="CheckCircle" class="w-5 h-5"></lucide-icon>
+                      </button>
+                      <button (click)="openStatusModal(pub, 5)" class="action-btn text-red-600 hover:bg-red-50 border-red-100" title="Poner en inactivo">
+                        <lucide-icon [name]="Trash2" class="w-5 h-5"></lucide-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No hay publicaciones pendientes.</td>
+                </tr>
+              }
             }
           </tbody>
         </table>
       </div>
+
+      @if (totalPages() > 1) {
+        <div class="px-6 py-5 border-t border-gray-50 flex items-center justify-center gap-3">
+          <button (click)="setPage(currentPage() - 1)" [disabled]="currentPage() === 1" class="pager-btn">
+            Anterior
+          </button>
+          @for (page of [].constructor(totalPages()); track $index) {
+            <button (click)="setPage($index + 1)"
+                    [class.bg-[#2E4C9E]]="currentPage() === $index + 1"
+                    [class.text-white]="currentPage() === $index + 1"
+                    [class.border-[#2E4C9E]]="currentPage() === $index + 1"
+                    class="w-10 h-10 rounded-xl border border-gray-200 text-sm font-semibold hover:bg-gray-50 transition-colors">
+              {{ $index + 1 }}
+            </button>
+          }
+          <button (click)="setPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()" class="pager-btn">
+            Siguiente
+          </button>
+        </div>
+      }
     </section>
   </main>
 
@@ -127,15 +113,15 @@
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
       <div class="space-y-4">
         <h3 class="text-white font-black text-xl tracking-tighter uppercase">Ayuda Puma</h3>
-        <p class="text-xs">© 2025 Ayuda PUMA. <br> Todos los derechos reservados.</p>
+        <p class="text-xs">© 2026 Ayuda PUMA. <br> Todos los derechos reservados.</p>
       </div>
       <div>
         <h4 class="text-white font-bold mb-4 uppercase text-xs tracking-widest">Servicios</h4>
         <ul class="text-sm space-y-2">
-          <li class="hover:text-white cursor-pointer transition-colors">Donación de Materiales</li>
-          <li class="hover:text-white cursor-pointer transition-colors">Compra y Venta</li>
-          <li class="hover:text-white cursor-pointer transition-colors">Préstamos</li>
-          <li class="hover:text-white cursor-pointer transition-colors">Intercambios</li>
+          <li>Donación de Materiales</li>
+          <li>Compra y Venta</li>
+          <li>Préstamos</li>
+          <li>Intercambios</li>
         </ul>
       </div>
       <div>
@@ -148,4 +134,119 @@
       </div>
     </div>
   </footer>
+  </div>
+
+  @if (showDetailModal() && selectedPublication()) {
+    <div class="fixed inset-0 z-[90] overflow-y-auto">
+      <div class="min-h-full flex items-center justify-center p-4">
+        <div (click)="closeDetailModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+        <div class="detail-modal relative bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden">
+          <button (click)="closeDetailModal()" class="absolute top-5 right-5 z-10 p-2 bg-white/90 rounded-full shadow-sm hover:bg-white transition-colors">
+            <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
+          </button>
+
+          <div class="grid md:grid-cols-[1.05fr_1fr] gap-0">
+            <div class="bg-gray-50 p-6 md:p-8 flex items-center justify-center">
+              <img [src]="getPrimaryImage(selectedPublication()!)"
+                   [alt]="selectedPublication()!.productName"
+                   class="w-full max-h-[420px] object-cover rounded-[2rem] border border-gray-100 bg-white">
+            </div>
+
+            <div class="p-8 flex flex-col">
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="tag">{{ selectedPublication()!.categoryName }}</span>
+                <span class="tag">{{ selectedPublication()!.conditionName }}</span>
+                <span class="tag">{{ selectedPublication()!.modalityName }}</span>
+              </div>
+
+              <h3 class="text-3xl font-black text-gray-900 leading-tight">{{ selectedPublication()!.productName }}</h3>
+
+              <div class="grid grid-cols-2 gap-4 my-6">
+                <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                  <p class="text-[11px] font-black uppercase tracking-widest text-gray-400">Precio</p>
+                  <p class="text-2xl font-black text-[#2E4C9E] mt-2">{{ getPriceLabel(selectedPublication()!.price) }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                  <p class="text-[11px] font-black uppercase tracking-widest text-gray-400">Estado solicitado</p>
+                  <p class="text-base font-bold text-amber-600 mt-3">En revisión</p>
+                </div>
+              </div>
+
+              <div class="mb-6">
+                <p class="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Descripción</p>
+                <p class="text-sm leading-7 text-gray-600">{{ selectedPublication()!.description }}</p>
+              </div>
+
+              <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-6">
+                <p class="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Publicó</p>
+                <p class="font-bold text-gray-800">{{ selectedPublication()!.firstName }} {{ selectedPublication()!.lastName }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ selectedPublication()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+
+              <div class="flex gap-3 mt-auto">
+                <button (click)="openStatusModal(selectedPublication()!, 1)" class="flex-1 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-bold py-3 transition-colors shadow-md shadow-green-200">
+                  Poner Disponible
+                </button>
+                <button (click)="openStatusModal(selectedPublication()!, 5)" class="flex-1 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold py-3 transition-colors shadow-md shadow-red-200">
+                  Poner Inactivo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showStatusModal() && selectedPublication()) {
+    <div class="fixed inset-0 z-[100] overflow-y-auto">
+      <div class="min-h-full flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+        <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+          <div class="p-8">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
+                 [ngClass]="selectedStatus() === 1 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+              <lucide-icon [name]="selectedStatus() === 1 ? CheckCircle : Trash2" class="w-10 h-10"></lucide-icon>
+            </div>
+
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">
+              {{ selectedStatus() === 1 ? 'Aprobar Publicación' : 'Poner Publicación en Inactivo' }}
+            </h3>
+            <p class="text-gray-500 mb-6 text-sm leading-relaxed">
+              {{ selectedStatus() === 1 ? 'Esta acción hará visible la publicación' : 'Esta acción enviará la publicación a estado inactivo' }}:
+              <span class="font-bold text-gray-700">"{{ selectedPublication()!.productName }}"</span>.
+            </p>
+
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Descripción obligatoria</label>
+              <textarea
+                [ngModel]="actionReason()"
+                (ngModelChange)="actionReason.set($event)"
+                class="w-full rounded-2xl border-gray-100 bg-gray-50 p-4 text-sm focus:ring-2 focus:ring-[#2E4C9E] focus:bg-white transition-all outline-none border resize-none"
+                rows="4"
+                [placeholder]="selectedStatus() === 1 ? 'Escribe la razón o comentario de aprobación...' : 'Escribe la razón por la que la publicación será puesta en inactivo...'">
+              </textarea>
+            </div>
+
+            <div class="flex gap-3 mt-8">
+              <button (click)="closeStatusModal()" class="flex-1 px-6 py-3 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 transition-colors">
+                Cancelar
+              </button>
+              <button
+                (click)="confirmAction()"
+                [disabled]="isSubmitting() || !actionReason().trim()"
+                class="flex-1 px-6 py-3 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                [ngClass]="selectedStatus() === 1 ? 'bg-green-600 hover:bg-green-700 shadow-green-200' : 'bg-red-600 hover:bg-red-700 shadow-red-200'">
+                {{ isSubmitting() ? 'Procesando...' : 'Confirmar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  
 </div>

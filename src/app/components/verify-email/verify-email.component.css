@@ -1,0 +1,78 @@
+.verify-shell {
+  @apply flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8;
+  background-image:
+    radial-gradient(circle at top, rgba(14, 165, 233, 0.24), transparent 30%),
+    linear-gradient(180deg, #020617 0%, #0f172a 55%, #082f49 100%);
+}
+
+.verify-card {
+  @apply w-full max-w-xl rounded-[2rem] border border-white/10 bg-white px-6 py-8 text-slate-900 shadow-[0_30px_80px_rgba(2,6,23,0.45)] sm:px-8;
+}
+
+.verify-badge {
+  @apply inline-flex rounded-full bg-sky-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-800;
+}
+
+.verify-title {
+  @apply mt-5 text-3xl font-black text-slate-950;
+}
+
+.verify-subtitle {
+  @apply mt-3 text-sm leading-7 text-slate-600;
+}
+
+.verify-message {
+  @apply mt-6 rounded-2xl border px-4 py-3 text-sm;
+}
+
+.verify-message--error {
+  @apply border-red-200 bg-red-50 text-red-700;
+}
+
+.verify-form {
+  @apply mt-8 space-y-5;
+}
+
+.verify-field {
+  @apply flex flex-col gap-2;
+}
+
+.verify-field label {
+  @apply text-sm font-semibold text-slate-700;
+}
+
+.verify-input {
+  @apply w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition;
+}
+
+.verify-input:focus {
+  @apply border-sky-400 bg-white ring-4 ring-sky-500/10;
+}
+
+.verify-input--code {
+  @apply text-center text-3xl font-black tracking-[0.45em];
+}
+
+.verify-button {
+  @apply inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-6 py-4 text-sm font-bold uppercase tracking-[0.18em] text-white transition;
+}
+
+.verify-button:hover:not(:disabled) {
+  @apply bg-sky-700;
+}
+
+.verify-button:disabled {
+  @apply cursor-not-allowed opacity-50;
+}
+
+.verify-actions {
+  @apply mt-6 flex flex-col gap-3 text-center;
+}
+
+.verify-link-button {
+  @apply text-sm font-semibold text-sky-700 transition hover:text-sky-900 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.verify-link {
+  @apply text-sm font-medium text-slate-500 transition hover:text-slate-900;
+}
