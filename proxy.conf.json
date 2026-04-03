@@ -1,38 +1,38 @@
 {
   "/auth": {
-    "target": "http://18.217.173.90:3000",
-    "secure": false,
+    "target": "https://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/users": {
-    "target": "http://18.217.173.90:3000",
-    "secure": false,
+    "target": "https://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/products": {
-    "target": "http://18.217.173.90:3000",
-    "secure": false,
+    "target": "https://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/chats": {
-    "target": "http://18.217.173.90:3000",
-    "secure": false,
+    "target": "https://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/ws": {
-    "target": "ws://18.217.173.90:3000",
-    "secure": false,
+    "target": "wss://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "ws": true,
     "logLevel": "debug"
   },
   "/upload": {
-    "target": "http://18.217.173.90:3000",
-    "secure": false,
+    "target": "https://ayudapuma.mooo.com",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   }
