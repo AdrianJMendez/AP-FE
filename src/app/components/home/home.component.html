@@ -1,12 +1,11 @@
-<div class="min-h-screen bg-gray-50 flex flex-col animate-fade-in">
+<app-alert></app-alert>
 
+<div class="min-h-screen bg-gray-50 flex flex-col animate-fade-in">
 
   <header class="px-6 py-2 text-white shadow-lg bg-[#2E4C9E]">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <img src="assets/ayudapuma.png" alt="Ayuda PUMA" class="h-20 w-auto object-contain" />
-
       <div class="flex items-center gap-6">
-     
         <button (click)="showFavoritesOnly.set(!showFavoritesOnly())"
                 class="relative p-2 rounded-xl transition-all hover:scale-110">
           <lucide-icon [name]="Heart"
@@ -18,8 +17,6 @@
             {{ favorites().length }}
           </span>
         </button>
-
-
         <button (click)="openMessagesModal()"
                 class="relative p-2 rounded-xl transition-all hover:scale-110">
           <lucide-icon [name]="MessageCircle" class="w-6 h-6"></lucide-icon>
@@ -28,8 +25,6 @@
             {{ chats().length }}
           </span>
         </button>
-
-
         <div class="flex items-center gap-2 pl-4 border-l border-blue-400 cursor-pointer"
              (click)="openProfileModal()">
           <div class="w-9 h-9 bg-blue-800 rounded-full flex items-center justify-center border border-blue-300 hover:bg-blue-700 transition-colors">
@@ -61,35 +56,30 @@
 
     <aside class="w-full md:w-64 space-y-6 flex-shrink-0">
       <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 sidebar-sticky">
-
         <h4 class="filter-label">Categoría</h4>
         <div class="space-y-3">
           @for (cat of ['Tecnología','Libros y Material Académico','Uniformes','Electrodomésticos','Ropa y Accesorios','Deportes','Hogar','Instrumentos Musicales','Otros']; track cat) {
             <label class="filter-item">
-              <input type="checkbox"
-                     (change)="toggleFilter('material', cat)"
+              <input type="checkbox" (change)="toggleFilter('material', cat)"
                      [checked]="selectedMaterials().includes(cat)"
                      class="w-4 h-4 rounded accent-[#2E4C9E]">
-              <span class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors ml-1">{{ cat }}</span>
+              <span class="text-sm text-gray-600 ml-1">{{ cat }}</span>
             </label>
           }
         </div>
-
         <h4 class="filter-label mt-8">Modalidad</h4>
         <div class="space-y-3">
           @for (mod of ['Venta','Intercambio','Donación']; track mod) {
             <label class="filter-item">
-              <input type="checkbox"
-                     (change)="toggleFilter('modality', mod)"
+              <input type="checkbox" (change)="toggleFilter('modality', mod)"
                      [checked]="selectedModalities().includes(mod)"
                      class="w-4 h-4 rounded accent-[#2E4C9E]">
-              <span class="text-sm text-gray-600 group-hover:text-blue-600 transition-colors ml-1">{{ mod }}</span>
+              <span class="text-sm text-gray-600 ml-1">{{ mod }}</span>
             </label>
           }
         </div>
-
         <h4 class="filter-label mt-8">Precio Máximo</h4>
-        <input type="range" min="0" max="15000" step="100"
+        <input type="range" min="0" [max]="priceRangeLimit()" step="100"
                [ngModel]="priceRange()"
                (ngModelChange)="priceRange.set($event)"
                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#2E4C9E]" />
@@ -102,19 +92,15 @@
     <section class="flex-1 min-w-0">
 
       <div class="flex gap-8 border-b mb-6">
-        <button (click)="activeTab.set('todos'); currentPage.set(1)"
-                class="tab-btn"
-                [class.tab-active]="activeTab() === 'todos'"
-                [class.tab-inactive]="activeTab() !== 'todos'">
+        <button (click)="activeTab.set('todos'); currentPage.set(1); loadProducts()"
+                class="tab-btn" [class.tab-active]="activeTab() === 'todos'" [class.tab-inactive]="activeTab() !== 'todos'">
           Catálogo General
           @if (activeTab() === 'todos') {
             <div class="absolute bottom-0 left-0 w-full h-1 bg-[#2E4C9E] rounded-full"></div>
           }
         </button>
-        <button (click)="activeTab.set('mis'); currentPage.set(1)"
-                class="tab-btn"
-                [class.tab-active]="activeTab() === 'mis'"
-                [class.tab-inactive]="activeTab() !== 'mis'">
+        <button (click)="activeTab.set('mis'); currentPage.set(1); loadMyProducts(1, myStatusFilter())"
+                class="tab-btn" [class.tab-active]="activeTab() === 'mis'" [class.tab-inactive]="activeTab() !== 'mis'">
           Mis Publicaciones
           @if (activeTab() === 'mis') {
             <div class="absolute bottom-0 left-0 w-full h-1 bg-[#2E4C9E] rounded-full"></div>
@@ -124,34 +110,28 @@
 
       <div class="flex items-center justify-between mb-5">
         <p class="text-sm text-gray-500">
-          Mostrando
-          <span class="font-semibold text-gray-700">
+          Mostrando <span class="font-semibold text-gray-700">
             {{ activeTab() === 'mis' ? myProductsSignal().length : filteredProducts().length }}
-          </span>
-          resultados
+          </span> resultados
         </p>
         <div class="flex items-center gap-2">
-          <button (click)="viewMode.set('list')"
-                  [class.bg-gray-200]="viewMode() === 'list'"
+          <button (click)="viewMode.set('list')" [class.bg-gray-200]="viewMode() === 'list'"
                   class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <lucide-icon [name]="List" class="w-5 h-5 text-gray-600"></lucide-icon>
           </button>
-          <button (click)="viewMode.set('grid')"
-                  [class.bg-gray-200]="viewMode() === 'grid'"
+          <button (click)="viewMode.set('grid')" [class.bg-gray-200]="viewMode() === 'grid'"
                   class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <lucide-icon [name]="Grid3x3" class="w-5 h-5 text-gray-600"></lucide-icon>
           </button>
         </div>
       </div>
 
-
+      <!-- TAB: CATÁLOGO GENERAL -->
       @if (activeTab() === 'todos') {
-
         @if (viewMode() === 'grid') {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @for (product of pagedProducts(); track product.id) {
-              <div (click)="openDetail(product)"
-                   class="product-card flex flex-col h-full group">
+            @for (product of pagedProducts(); track product.id + '-' + $index) {
+              <div (click)="openDetail(product)" class="product-card flex flex-col h-full group">
                 <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
                   <img [src]="product.image" [alt]="product.title"
                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -168,17 +148,15 @@
                 </div>
                 <div class="p-5 flex flex-col flex-grow">
                   <div class="flex flex-wrap gap-1 mb-2">
-                    @for (tag of product.tags; track tag) {
-                      <span class="tag">{{ tag }}</span>
-                    }
+                    @for (tag of product.tags; track tag) { <span class="tag">{{ tag }}</span> }
                   </div>
                   <h3 class="font-bold text-gray-800 text-base mb-auto line-clamp-2">{{ product.title }}</h3>
-                  <div class="flex items-center justify-between mt-4">
-                    <span class="text-xl font-black text-[#2E4C9E]">
+                  <div class="flex items-center justify-between mt-4 gap-2">
+                    <span class="text-xl font-black text-[#2E4C9E] truncate">
                       {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                     </span>
                     <button (click)="openChatFromProduct(product, $event)"
-                            class="p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
+                            class="shrink-0 p-3 bg-[#2E4C9E] text-white rounded-xl shadow-md shadow-blue-100 hover:bg-blue-800 transition-colors">
                       <lucide-icon [name]="MessageCircle" class="w-5 h-5"></lucide-icon>
                     </button>
                   </div>
@@ -190,7 +168,7 @@
 
         @if (viewMode() === 'list') {
           <div class="flex flex-col gap-4">
-            @for (product of pagedProducts(); track product.id) {
+            @for (product of pagedProducts(); track product.id + '-' + $index) {
               <div (click)="openDetail(product)"
                    class="bg-white rounded-2xl shadow-sm border border-gray-100 flex overflow-hidden
                           hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer group">
@@ -203,17 +181,15 @@
                 </div>
                 <div class="p-5 flex flex-col flex-grow">
                   <div class="flex flex-wrap gap-1 mb-2">
-                    @for (tag of product.tags; track tag) {
-                      <span class="tag">{{ tag }}</span>
-                    }
+                    @for (tag of product.tags; track tag) { <span class="tag">{{ tag }}</span> }
                   </div>
                   <h3 class="font-bold text-gray-800 text-lg mb-1">{{ product.title }}</h3>
                   <p class="text-sm text-gray-500 line-clamp-2 mb-auto">{{ product.description }}</p>
-                  <div class="flex items-center justify-between mt-4">
-                    <span class="text-xl font-black text-[#2E4C9E]">
+                  <div class="flex items-center justify-between mt-4 gap-2">
+                    <span class="text-xl font-black text-[#2E4C9E] truncate">
                       {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
                     </span>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 shrink-0">
                       <button (click)="toggleFavorite($event, product.id)"
                               class="p-2.5 bg-gray-100 rounded-xl hover:bg-red-50 transition-colors fav-btn">
                         <lucide-icon [name]="Heart"
@@ -235,8 +211,7 @@
 
         @if (totalPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
-            <button (click)="setPage(currentPage() - 1)"
-                    [disabled]="currentPage() === 1"
+            <button (click)="setPage(currentPage() - 1)" [disabled]="currentPage() === 1"
                     class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
                            hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Anterior
@@ -246,13 +221,11 @@
                       [class.bg-[#2E4C9E]]="currentPage() === $index + 1"
                       [class.text-white]="currentPage() === $index + 1"
                       [class.border-[#2E4C9E]]="currentPage() === $index + 1"
-                      class="w-9 h-9 rounded-xl border border-gray-200 text-sm font-medium
-                             hover:bg-gray-50 transition-colors">
+                      class="w-9 h-9 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
                 {{ $index + 1 }}
               </button>
             }
-            <button (click)="setPage(currentPage() + 1)"
-                    [disabled]="currentPage() >= totalPages()"
+            <button (click)="setPage(currentPage() + 1)" [disabled]="currentPage() >= totalPages()"
                     class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
                            hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Siguiente
@@ -261,19 +234,36 @@
         }
       }
 
-
+      <!-- TAB: MIS PUBLICACIONES -->
       @if (activeTab() === 'mis') {
+        <div class="flex flex-wrap gap-2 mb-4">
+          @for (f of myProductStatuses; track f.id) {
+            <button (click)="setMyStatus(f.id)"
+                    [class.bg-[#2E4C9E]]="myStatusFilter() === f.id"
+                    [class.text-white]="myStatusFilter() === f.id"
+                    [class.border-[#2E4C9E]]="myStatusFilter() === f.id"
+                    class="px-3 py-2 rounded-lg border text-xs font-semibold transition-colors">
+              {{ f.label }}
+            </button>
+          }
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (product of pagedMyProducts(); track product.id) {
-            <div (click)="openDetail(product)"
-                 class="product-card flex flex-col h-full group cursor-pointer">
+          @for (product of pagedMyProducts(); track product.id + '-' + $index) {
+            <div (click)="openDetail(product)" class="product-card flex flex-col h-full group cursor-pointer">
               <div class="relative aspect-square overflow-hidden bg-gray-50 rounded-t-[2rem]">
                 <img [src]="product.image" [alt]="product.title"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <span class="status-badge {{ getStatusBg(product.status) }} {{ getStatusText(product.status) }} absolute top-4 left-4">
-                  {{ product.status }}
+                <span class="status-badge {{ getStatusBg(product.state ?? product.status) }} {{ getStatusText(product.state ?? product.status) }} absolute top-4 left-4">
+                  {{ product.state ?? product.status }}
                 </span>
+                <button (click)="openEditDialog($event, product)"
+                        class="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg
+                               z-20 hover:scale-110 transition-transform hover:bg-[#2E4C9E] group/edit">
+                  <lucide-icon [name]="Pencil" class="w-4 h-4 text-gray-600 group-hover/edit:text-white"></lucide-icon>
+                </button>
               </div>
+
               <div class="p-5 flex flex-col flex-grow">
                 <h3 class="font-bold text-gray-800 text-base mb-3 line-clamp-2">{{ product.title }}</h3>
 
@@ -292,25 +282,35 @@
                   </div>
                 </div>
 
-                <div class="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-                  <span class="text-lg font-black text-[#2E4C9E]">
+                <div class="mt-auto pt-2 border-t border-gray-100">
+                  <p class="text-lg font-black text-[#2E4C9E] mb-2">
                     {{ product.price > 0 ? 'L. ' + (product.price | number:'1.2-2') : 'Gratis' }}
-                  </span>
-                  <button class="py-2 px-4 bg-white border border-gray-200 rounded-xl text-[10px]
-                                 font-black uppercase text-gray-500 hover:bg-gray-50 transition-colors">
-                    Gestionar
-                  </button>
+                  </p>
+                    <div class="flex gap-1.5 shrink-0">
+                      <button (click)="changeProductStatus($event, product)"
+                              [disabled]="!getProductStatusAction(product)"
+                              class="py-2 px-2.5 bg-[#2E4C9E] text-white rounded-xl text-[9px]
+                                     font-black uppercase hover:bg-blue-800 transition-colors
+                                     flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                        <lucide-icon [name]="Pencil" class="w-3 h-3 shrink-0"></lucide-icon>
+                        {{ getProductStatusAction(product)?.label || 'N/A' }}
+                      </button>
+                      <button (click)="deactivateProduct($event, product)"
+                              class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black
+                             uppercase rounded-xl flex items-center gap-1 transition-colors">
+                        Inactivar
+            
+                      </button>
+                    </div>
                 </div>
               </div>
             </div>
           }
         </div>
 
-
         @if (totalMyPages() > 1) {
           <div class="flex items-center justify-center gap-3 mt-8">
-            <button (click)="setMyPage(currentMyPage() - 1)"
-                    [disabled]="currentMyPage() === 1"
+            <button (click)="setMyPage(currentMyPage() - 1)" [disabled]="currentMyPage() === 1"
                     class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
                            hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Anterior
@@ -320,13 +320,11 @@
                       [class.bg-[#2E4C9E]]="currentMyPage() === $index + 1"
                       [class.text-white]="currentMyPage() === $index + 1"
                       [class.border-[#2E4C9E]]="currentMyPage() === $index + 1"
-                      class="w-9 h-9 rounded-xl border border-gray-200 text-sm font-medium
-                             hover:bg-gray-50 transition-colors">
+                      class="w-9 h-9 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
                 {{ $index + 1 }}
               </button>
             }
-            <button (click)="setMyPage(currentMyPage() + 1)"
-                    [disabled]="currentMyPage() >= totalMyPages()"
+            <button (click)="setMyPage(currentMyPage() + 1)" [disabled]="currentMyPage() >= totalMyPages()"
                     class="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium
                            hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Siguiente
@@ -344,19 +342,14 @@
         <div>
           <h4 class="font-bold mb-4 text-sm uppercase tracking-widest">Servicios</h4>
           <ul class="space-y-2 text-sm text-gray-400">
-            <li>Donación de Materiales</li>
-            <li>Compra y Venta</li>
-            <li>Préstamos</li>
-            <li>Intercambios</li>
+            <li>Donación de Materiales</li><li>Compra y Venta</li><li>Préstamos</li><li>Intercambios</li>
           </ul>
         </div>
         <div>
           <h4 class="font-bold mb-4 text-sm uppercase tracking-widest">Contáctanos</h4>
           <ul class="space-y-2 text-sm text-gray-400">
-            <li>WhatsApp: 3334-56-08</li>
-            <li>Facebook: Ayuda Puma</li>
-            <li>Correo: ayudapuma&#64;unah.hn</li>
-            <li>Ciudad Universitaria</li>
+            <li>WhatsApp: 9563-5984</li><li>Facebook: Ayuda Puma</li>
+            <li>Correo: ayudapuma&#64;unah.hn</li><li>Ciudad Universitaria</li>
           </ul>
         </div>
       </div>
@@ -366,9 +359,7 @@
       </div>
     </div>
   </footer>
-
 </div>
-
 
 <button (click)="openAddDialog()"
         style="position:fixed; bottom:2.5rem; right:2.5rem; z-index:50;"
@@ -379,45 +370,46 @@
 </button>
 
 
+<!-- ===================== MODAL: DETALLE PRODUCTO ===================== -->
 @if (selectedProduct()) {
   <div class="modal-overlay">
     <div (click)="closeDetail()" class="modal-backdrop"></div>
     <div class="modal-box animate-modal-in">
-
       <button (click)="closeDetail()" class="modal-close-btn">
         <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
       </button>
-
       <div class="modal-inner">
-
-        <div class="modal-img-col">
-          <img [src]="selectedProduct()?.image"
-               [alt]="selectedProduct()?.title"
-               class="modal-img" />
-          <span class="status-badge modal-status-badge
-                       {{ getStatusBg(selectedProduct()!.status) }}
-                       {{ getStatusText(selectedProduct()!.status) }}">
-            {{ selectedProduct()?.status }}
-          </span>
+        <div class="modal-img-col flex flex-col gap-3">
+          @if (selectedProduct()!.images && selectedProduct()!.images!.length > 1) {
+            @for (img of selectedProduct()!.images!; track $index) {
+              <div class="relative flex-1">
+                <img [src]="img" [alt]="selectedProduct()?.title" class="w-full h-full object-cover rounded-2xl" />
+                @if ($index === 0) {
+                  <span class="status-badge modal-status-badge {{ getStatusBg(selectedProduct()!.status) }} {{ getStatusText(selectedProduct()!.status) }}">
+                    {{ selectedProduct()?.status }}
+                  </span>
+                }
+              </div>
+            }
+          } @else {
+            <div class="relative">
+              <img [src]="selectedProduct()?.image" [alt]="selectedProduct()?.title" class="modal-img" />
+              <span class="status-badge modal-status-badge {{ getStatusBg(selectedProduct()!.status) }} {{ getStatusText(selectedProduct()!.status) }}">
+                {{ selectedProduct()?.status }}
+              </span>
+            </div>
+          }
         </div>
-
         <div class="modal-info-col">
-
           <div class="flex items-center gap-2 mb-2">
             <span class="modal-cat-badge">{{ selectedProduct()?.category }}</span>
             <span class="modal-career-label">{{ selectedProduct()?.career }}</span>
           </div>
-
           <h2 class="modal-title">{{ selectedProduct()?.title }}</h2>
-
           <p class="modal-desc">{{ selectedProduct()?.description }}</p>
-
           <div class="flex flex-wrap gap-1 mb-3">
-            @for (tag of selectedProduct()?.tags ?? []; track tag) {
-              <span class="tag">{{ tag }}</span>
-            }
+            @for (tag of selectedProduct()?.tags ?? []; track tag) { <span class="tag">{{ tag }}</span> }
           </div>
-
           <div class="flex items-center justify-between mb-3">
             <div>
               <p class="modal-meta-label">Precio</p>
@@ -432,38 +424,38 @@
               </span>
             </div>
           </div>
-
           @if (isMyProduct()(selectedProduct()!)) {
             <div class="modal-stats">
-              <div class="text-center">
-                <p class="modal-stat-label">Vistas</p>
-                <p class="modal-stat-val text-[#2E4C9E]">{{ selectedProduct()?.views }}</p>
-              </div>
-              <div class="text-center">
-                <p class="modal-stat-label">Guardado</p>
-                <p class="modal-stat-val text-red-500">{{ selectedProduct()?.savedBy }}</p>
-              </div>
-              <div class="text-center">
-                <p class="modal-stat-label">Mensajes</p>
-                <p class="modal-stat-val text-blue-600">{{ selectedProduct()?.messages }}</p>
-              </div>
+              <div class="text-center"><p class="modal-stat-label">Vistas</p><p class="modal-stat-val text-[#2E4C9E]">{{ selectedProduct()?.views }}</p></div>
+              <div class="text-center"><p class="modal-stat-label">Guardado</p><p class="modal-stat-val text-red-500">{{ selectedProduct()?.savedBy }}</p></div>
+              <div class="text-center"><p class="modal-stat-label">Mensajes</p><p class="modal-stat-val text-blue-600">{{ selectedProduct()?.messages }}</p></div>
             </div>
           }
-
           <div class="flex gap-2 mt-auto pt-3">
-            <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
-              <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
-              CONTACTAR
-            </button>
-            <button (click)="toggleFavorite($event, selectedProduct()!.id)"
-                    class="modal-fav-btn fav-btn">
+            @if (isMyProduct()(selectedProduct()!)) {
+              <button (click)="openEditDialog($event, selectedProduct()!); closeDetail()" class="modal-action-btn">
+                <lucide-icon [name]="Pencil" class="w-4 h-4"></lucide-icon>
+                EDITAR
+              </button>
+              <button (click)="deactivateProduct($event, selectedProduct()!)"
+                      class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black
+                             uppercase rounded-xl flex items-center gap-1 transition-colors">
+                <lucide-icon [name]="Trash2" class="w-4 h-4"></lucide-icon>
+                INACTIVAR
+              </button>
+            } @else {
+              <button (click)="openChatFromProduct(selectedProduct()!, $event)" class="modal-action-btn">
+                <lucide-icon [name]="MessageCircle" class="w-4 h-4"></lucide-icon>
+                CONTACTAR
+              </button>
+            }
+            <button (click)="toggleFavorite($event, selectedProduct()!.id)" class="modal-fav-btn fav-btn">
               <lucide-icon [name]="Heart"
                            [class.fav-active]="favorites().includes(selectedProduct()!.id)"
                            [class.fav-inactive]="!favorites().includes(selectedProduct()!.id)"
                            class="w-5 h-5"></lucide-icon>
             </button>
           </div>
-
         </div>
       </div>
     </div>
@@ -471,114 +463,78 @@
 }
 
 
-@if (isAddDialogOpen()) {
+<!-- ===================== MODAL: EDITAR PRODUCTO ===================== -->
+@if (isEditDialogOpen()) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-    <div (click)="closeAddDialog()"
-         class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
-    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative
-                flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
-
+    <div (click)="closeEditDialog()" class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
       <div class="p-8 pb-0 flex items-start justify-between">
         <div>
-          <h2 class="text-2xl font-black text-gray-900">Nuevo producto</h2>
-          <p class="text-sm text-gray-500 mt-1">Completa los datos para publicar</p>
+          <h2 class="text-2xl font-black text-gray-900">Editar producto</h2>
+          <p class="text-sm text-gray-500 mt-1">Modifica los datos de tu publicación</p>
         </div>
-        <button (click)="closeAddDialog()"
-                class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
+        <button (click)="closeEditDialog()" class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
           <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
         </button>
       </div>
-
       <div class="p-8 overflow-y-auto flex-1 space-y-5">
-
-
         <div class="form-group">
           <label class="form-label">Título *</label>
-          <input [ngModel]="newProduct().title"
-                 (ngModelChange)="setNewProductField('title', $event)"
-                 type="text" placeholder="Ej: Calculadora Científica HP"
-                 class="form-input" />
+          <input [ngModel]="editProduct().title" (ngModelChange)="setEditProductField('title', $event)"
+                 type="text" placeholder="Ej: Calculadora Científica HP" class="form-input" />
         </div>
-
-
         <div class="form-group">
           <label class="form-label">Descripción *</label>
-          <textarea [ngModel]="newProduct().description"
-                    (ngModelChange)="setNewProductField('description', $event)"
-                    rows="3"
-                    placeholder="Describe el estado, características y detalles del producto..."
+          <textarea [ngModel]="editProduct().description" (ngModelChange)="setEditProductField('description', $event)"
+                    rows="3" placeholder="Describe el estado, características y detalles del producto..."
                     class="form-input resize-none"></textarea>
         </div>
-
-
         <div class="form-group">
-          <label class="form-label">
-            Imágenes del producto
-            <span class="text-gray-400 font-normal">(máx. 2)</span>
-          </label>
-
-          @if (imagePreviews().length > 0) {
+          <label class="form-label">Imágenes del producto <span class="text-gray-400 font-normal">(máx. 2)</span></label>
+          @if (editImagePreviews().length > 0) {
             <div class="grid grid-cols-2 gap-3 mb-3">
-              @for (preview of imagePreviews(); track $index) {
+              @for (preview of editImagePreviews(); track $index) {
                 <div class="relative group">
-                  <img [src]="preview" alt="Preview {{ $index + 1 }}"
-                       class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
-                  @if (!imageUrls()[$index]) {
+                  <img [src]="preview" alt="Preview {{ $index + 1 }}" class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
+                  @if (!editImageUrls()[$index]) {
                     <div class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
                       <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   }
-                  <button (click)="clearImageAt($index)"
-                          class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow
-                                 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button (click)="clearEditImageAt($index)" class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity">
                     <lucide-icon [name]="X" class="w-3.5 h-3.5 text-gray-700"></lucide-icon>
                   </button>
                 </div>
               }
             </div>
           }
-
-          @if (imagePreviews().length < 2) {
-            <label class="file-upload-area" for="fileInput">
+          @if (editImagePreviews().length < 2) {
+            <label class="file-upload-area" for="editFileInput">
               <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
               <span class="text-sm font-semibold text-gray-600">
-                {{ imagePreviews().length === 0 ? 'Haz clic para subir una imagen' : 'Agregar segunda imagen' }}
+                {{ editImagePreviews().length === 0 ? 'Haz clic para subir una imagen' : 'Agregar segunda imagen' }}
               </span>
               <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
             </label>
           }
-          <input id="fileInput" type="file" accept="image/*"
-                 (change)="onFileSelected($event)"
-                 class="hidden" />
+          <input id="editFileInput" type="file" accept="image/*" (change)="onEditFileSelected($event)" class="hidden" />
         </div>
-
-
         <div class="form-group">
           <label class="form-label">Modalidad *</label>
-          <select [ngModel]="newProduct().status"
-                  (ngModelChange)="setNewProductField('status', $event)"
-                  class="form-input">
-            <option value="Venta">Venta</option>
-            <option value="Intercambio">Intercambio</option>
-            <option value="Donación">Donación</option>
+          <select [ngModel]="editProduct().status" (ngModelChange)="setEditProductField('status', $event)" class="form-input">
+            <option value="Venta">Venta</option><option value="Intercambio">Intercambio</option><option value="Donación">Donación</option>
           </select>
         </div>
-
-        @if (newProduct().status === 'Venta' || newProduct().status === 'Intercambio') {
+        @if (editProduct().status === 'Venta' || editProduct().status === 'Intercambio') {
           <div class="form-group">
             <label class="form-label">Precio (L.)</label>
-            <input [ngModel]="newProduct().price"
-                   (ngModelChange)="setNewProductField('price', $event)"
-                   type="number" placeholder="0.00"
-                   class="form-input" />
+            <input [ngModel]="editProduct().price" (ngModelChange)="setEditProductField('price', $event)"
+                   type="number" placeholder="0.00" class="form-input" />
           </div>
         }
-
         <div class="form-group">
           <label class="form-label">Categoría *</label>
-          <select [ngModel]="newProduct().category"
-                  (ngModelChange)="setNewProductField('category', $event)"
-                  class="form-input">
+          <select [ngModel]="editProduct().category" (ngModelChange)="setEditProductField('category', $event)" class="form-input">
             <option value="" disabled>Selecciona una categoría</option>
             <option value="Tecnología">Tecnología</option>
             <option value="Libros y Material Académico">Libros y Material Académico</option>
@@ -591,23 +547,118 @@
             <option value="Otros">Otros</option>
           </select>
         </div>
-
-
         <div class="form-group">
           <label class="form-label">Condición *</label>
-          <select [ngModel]="newProduct().condition"
-                  (ngModelChange)="setNewProductField('condition', $event)"
-                  class="form-input">
-            <option value="Nuevo">Nuevo</option>
-            <option value="Usado">Usado</option>
+          <select [ngModel]="editProduct().condition" (ngModelChange)="setEditProductField('condition', $event)" class="form-input">
+            <option value="Nuevo">Nuevo</option><option value="Usado">Usado</option>
           </select>
         </div>
+      </div>
+      <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
+        <button (click)="closeEditDialog()" class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+        <button (click)="saveEditProduct()" [disabled]="isEditSaving()"
+                class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold hover:bg-blue-800 transition-colors shadow-md shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ isEditSaving() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
 
+
+<!-- ===================== MODAL: AGREGAR PRODUCTO ===================== -->
+@if (isAddDialogOpen()) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div (click)="closeAddDialog()" class="fixed inset-0 bg-black/70 backdrop-blur-md"></div>
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative flex flex-col animate-modal-in" style="margin:auto; max-height:90vh;">
+      <div class="p-8 pb-0 flex items-start justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-gray-900">Nuevo producto</h2>
+          <p class="text-sm text-gray-500 mt-1">Completa los datos para publicar</p>
+        </div>
+        <button (click)="closeAddDialog()" class="p-2 bg-gray-100 rounded-full hover:bg-white transition-all shadow-sm">
+          <lucide-icon [name]="X" class="w-5 h-5 text-gray-700"></lucide-icon>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto flex-1 space-y-5">
+        <div class="form-group">
+          <label class="form-label">Título *</label>
+          <input [ngModel]="newProduct().title" (ngModelChange)="setNewProductField('title', $event)"
+                 type="text" placeholder="Ej: Calculadora Científica HP" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción *</label>
+          <textarea [ngModel]="newProduct().description" (ngModelChange)="setNewProductField('description', $event)"
+                    rows="3" placeholder="Describe el estado, características y detalles del producto..."
+                    class="form-input resize-none"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Imágenes del producto <span class="text-gray-400 font-normal">(máx. 2)</span></label>
+          @if (imagePreviews().length > 0) {
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              @for (preview of imagePreviews(); track $index) {
+                <div class="relative group">
+                  <img [src]="preview" alt="Preview {{ $index + 1 }}" class="w-full h-32 object-cover rounded-2xl border border-gray-200" />
+                  @if (!imageUrls()[$index]) {
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
+                      <div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  }
+                  <button (click)="clearImageAt($index)" class="absolute top-1.5 right-1.5 p-1 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity">
+                    <lucide-icon [name]="X" class="w-3.5 h-3.5 text-gray-700"></lucide-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          @if (imagePreviews().length < 2) {
+            <label class="file-upload-area" for="fileInput">
+              <lucide-icon [name]="Upload" class="w-8 h-8 text-gray-400 mb-2"></lucide-icon>
+              <span class="text-sm font-semibold text-gray-600">
+                {{ imagePreviews().length === 0 ? 'Haz clic para subir una imagen' : 'Agregar segunda imagen' }}
+              </span>
+              <span class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP — máx. 5 MB</span>
+            </label>
+          }
+          <input id="fileInput" type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modalidad *</label>
+          <select [ngModel]="newProduct().status" (ngModelChange)="setNewProductField('status', $event)" class="form-input">
+            <option value="Venta">Venta</option><option value="Intercambio">Intercambio</option><option value="Donación">Donación</option>
+          </select>
+        </div>
+        @if (newProduct().status === 'Venta' || newProduct().status === 'Intercambio') {
+          <div class="form-group">
+            <label class="form-label">Precio (L.)</label>
+            <input [ngModel]="newProduct().price" (ngModelChange)="setNewProductField('price', $event)"
+                   type="number" placeholder="0.00" class="form-input" />
+          </div>
+        }
+        <div class="form-group">
+          <label class="form-label">Categoría *</label>
+          <select [ngModel]="newProduct().category" (ngModelChange)="setNewProductField('category', $event)" class="form-input">
+            <option value="" disabled>Selecciona una categoría</option>
+            <option value="Tecnología">Tecnología</option>
+            <option value="Libros y Material Académico">Libros y Material Académico</option>
+            <option value="Uniformes">Uniformes</option>
+            <option value="Electrodomésticos">Electrodomésticos</option>
+            <option value="Ropa y Accesorios">Ropa y Accesorios</option>
+            <option value="Deportes">Deportes</option>
+            <option value="Hogar">Hogar</option>
+            <option value="Instrumentos Musicales">Instrumentos Musicales</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condición *</label>
+          <select [ngModel]="newProduct().condition" (ngModelChange)="setNewProductField('condition', $event)" class="form-input">
+            <option value="Nuevo">Nuevo</option><option value="Usado">Usado</option>
+          </select>
+        </div>
         <div class="form-group">
           <label class="form-label">Carrera *</label>
-          <select [ngModel]="newProduct().career"
-                  (ngModelChange)="setNewProductField('career', $event)"
-                  class="form-input">
+          <select [ngModel]="newProduct().career" (ngModelChange)="setNewProductField('career', $event)" class="form-input">
             <option value="" disabled>Selecciona tu carrera</option>
             <option value="Todas">Todas</option>
             <option value="Ingeniería">Ingeniería</option>
@@ -618,83 +669,50 @@
             <option value="Biología">Biología</option>
           </select>
         </div>
-
-
         <div class="form-group">
           <label class="form-label">Etiquetas (separadas por coma)</label>
-          <input type="text"
-                 placeholder="Ej: Usado, Ingeniería, Completo"
-                 (input)="onTagsChange($any($event.target).value)"
-                 class="form-input" />
+          <input type="text" placeholder="Ej: Usado, Ingeniería, Completo"
+                 (input)="onTagsChange($any($event.target).value)" class="form-input" />
           @if (newProduct().tags.length > 0) {
             <div class="flex flex-wrap gap-1 mt-2">
-              @for (tag of newProduct().tags; track tag) {
-                <span class="tag">{{ tag }}</span>
-              }
+              @for (tag of newProduct().tags; track tag) { <span class="tag">{{ tag }}</span> }
             </div>
           }
         </div>
-
       </div>
-
       <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
-        <button (click)="closeAddDialog()"
-                class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold
-                       text-gray-600 hover:bg-gray-50 transition-colors">
-          Cancelar
-        </button>
-        <button (click)="publishProduct()"
-                [disabled]="isSaving()"
-                class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold
-                       hover:bg-blue-800 transition-colors shadow-md shadow-blue-200
-                       disabled:opacity-50 disabled:cursor-not-allowed">
+        <button (click)="closeAddDialog()" class="px-6 py-3 rounded-2xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+        <button (click)="publishProduct()" [disabled]="isSaving()"
+                class="px-8 py-3 rounded-2xl bg-[#2E4C9E] text-white text-sm font-bold hover:bg-blue-800 transition-colors shadow-md shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed">
           {{ isSaving() ? 'Publicando...' : 'Publicar producto' }}
         </button>
       </div>
-
     </div>
   </div>
 }
 
 
-
+<!-- ===================== MODAL: PERFIL DE USUARIO ===================== -->
 @if (isProfileOpen()) {
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeProfileModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
-
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden">
-
-
       <div class="h-24 bg-[#2E4C9E] relative">
-        <button (click)="closeProfileModal()"
-                class="absolute top-4 right-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
+        <button (click)="closeProfileModal()" class="absolute top-4 right-4 p-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
           <lucide-icon [name]="X" class="w-4 h-4 text-white"></lucide-icon>
         </button>
       </div>
-
-      
       <div class="flex justify-center -mt-10 mb-4 relative z-10">
         <div class="w-20 h-20 rounded-full bg-[#17a2b8] flex items-center justify-center ring-4 ring-white shadow-lg">
           <lucide-icon [name]="User" class="w-10 h-10 text-white"></lucide-icon>
         </div>
       </div>
-
       <div class="px-6 pb-6">
-      
         <div class="text-center mb-5">
           <h2 class="text-xl font-bold text-gray-900">{{ currentUserName() }}</h2>
           <p class="text-sm text-gray-500 mt-1">{{ currentUserEmail() }}</p>
-          <p class="text-sm text-gray-500">Ingeniería en Sistemas</p>
+          <p class="text-xs text-gray-400 mt-0.5">Cuenta: {{ currentUserAccount() }}</p>
         </div>
-
-        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
-          <h3 class="text-xs font-black uppercase text-gray-400 tracking-widest mb-2">Sobre mí</h3>
-          <p class="text-sm text-gray-600 leading-relaxed">
-            Estudiante universitario apasionado por compartir materiales académicos y apoyar a la comunidad UNAH.
-          </p>
-        </div>
-
-     
         <div class="grid grid-cols-2 gap-3 mb-5">
           <div class="bg-[#17a2b8] text-white rounded-2xl p-4 text-center">
             <p class="text-2xl font-black">{{ myProductsSignal().length }}</p>
@@ -705,53 +723,38 @@
             <p class="text-xs mt-1 opacity-90">Intercambios</p>
           </div>
         </div>
-
- 
         <button (click)="logout()"
-                class="w-full py-3 rounded-2xl bg-[#dc3545] hover:bg-[#c82333] text-white
-                       font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                class="w-full py-3 rounded-2xl bg-[#dc3545] hover:bg-[#c82333] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2">
           <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
           Cerrar sesión
         </button>
       </div>
-
     </div>
   </div>
 }
 
 
+<!-- ===================== MODAL: MENSAJERÍA ===================== -->
 @if (isMessagesOpen()) {
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeMessagesModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
-
-    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden"
-         style="height: 580px;">
-
+    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden" style="height: 580px;">
       <div class="grid h-full" style="grid-template-columns: 280px 1fr;">
-
-     
         <div class="border-r flex flex-col h-full">
-
           <div class="p-4 border-b bg-white">
             <div class="flex items-center justify-between mb-3">
               <h2 class="font-black text-gray-900 text-lg">Chats</h2>
-              <button (click)="closeMessagesModal()"
-                      class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+              <button (click)="closeMessagesModal()" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
                 <lucide-icon [name]="X" class="w-4 h-4 text-gray-600"></lucide-icon>
               </button>
             </div>
             <div class="relative">
-              <lucide-icon [name]="Search"
-                           class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
-              <input [ngModel]="chatSearch()"
-                     (ngModelChange)="chatSearch.set($event)"
-                     type="text"
+              <lucide-icon [name]="Search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></lucide-icon>
+              <input [ngModel]="chatSearch()" (ngModelChange)="chatSearch.set($event)" type="text"
                      placeholder="Buscar conversaciones..."
-                     class="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200
-                            rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
+                     class="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
             </div>
           </div>
-
           <div class="flex-1 overflow-y-auto">
             @if (isLoadingChats()) {
               <div class="p-4 text-sm text-gray-400">Cargando conversaciones...</div>
@@ -759,14 +762,11 @@
               <div class="p-4 text-sm text-gray-400">Aún no tienes conversaciones.</div>
             } @else {
               @for (chat of filteredChats(); track chat.idConversation) {
-                <div (click)="selectChat(chat)"
-                     class="p-4 border-b cursor-pointer transition-colors hover:bg-gray-50"
+                <div (click)="selectChat(chat)" class="p-4 border-b cursor-pointer transition-colors hover:bg-gray-50"
                      [class.bg-blue-50]="selectedChat()?.idConversation === chat.idConversation">
                   <div class="flex items-start gap-3">
-                    <div class="relative flex-shrink-0">
-                      <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
-                        <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
-                      </div>
+                    <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center flex-shrink-0">
+                      <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between mb-0.5">
@@ -781,33 +781,21 @@
               }
             }
           </div>
-
-          
           <div class="p-3 bg-gray-50 border-t">
-            <p class="text-[11px] text-gray-500 flex items-center gap-1.5">
-              {{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}
-            </p>
+            <p class="text-[11px] text-gray-500">{{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}</p>
           </div>
         </div>
-
-        
         <div class="flex flex-col h-full bg-gray-50">
-
           @if (selectedChat()) {
-           
             <div class="flex items-center gap-3 px-5 py-4 bg-white border-b shadow-sm">
-              <div class="relative">
-                <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
-                  <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
-                </div>
+              <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
+                <lucide-icon [name]="User" class="w-5 h-5 text-white"></lucide-icon>
               </div>
               <div>
                 <p class="font-bold text-gray-900 text-sm">{{ selectedChat()!.otherUserName }}</p>
                 <p class="text-[11px] text-gray-400">{{ selectedChat()!.productName }}</p>
               </div>
             </div>
-
-           
             <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               @if (isLoadingMessages()) {
                 <p class="text-sm text-gray-400">Cargando mensajes...</p>
@@ -816,51 +804,35 @@
               } @else {
                 @for (msg of chatMessages(); track msg.idMessage) {
                   <div class="flex" [class.justify-end]="isMine(msg)" [class.justify-start]="!isMine(msg)">
-                  <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
-                       [class.bg-[#2E4C9E]]="isMine(msg)"
-                       [class.text-white]="isMine(msg)"
-                       [class.rounded-br-sm]="isMine(msg)"
-                       [class.bg-white]="!isMine(msg)"
-                       [class.text-gray-800]="!isMine(msg)"
-                       [class.rounded-bl-sm]="!isMine(msg)">
-                    <p>{{ msg.messageText }}</p>
-                    <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                    <div class="max-w-[72%] px-4 py-2.5 rounded-2xl text-sm shadow-sm"
+                         [class.bg-[#2E4C9E]]="isMine(msg)" [class.text-white]="isMine(msg)" [class.rounded-br-sm]="isMine(msg)"
+                         [class.bg-white]="!isMine(msg)" [class.text-gray-800]="!isMine(msg)" [class.rounded-bl-sm]="!isMine(msg)">
+                      <p>{{ msg.messageText }}</p>
+                      <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                    </div>
                   </div>
-                </div>
                 }
               }
             </div>
-
             <div class="px-4 py-3 bg-white border-t flex items-center gap-3">
-              <input [ngModel]="newMessage()"
-                     (ngModelChange)="newMessage.set($event)"
-                     (keydown.enter)="sendMessage()"
-                     type="text"
-                     placeholder="Escribe un mensaje..."
-                     class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-                            outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
-              <button (click)="sendMessage()"
-                      [disabled]="!newMessage().trim() || !isSocketConnected()"
-                      class="p-2.5 bg-[#2E4C9E] text-white rounded-xl hover:bg-blue-800
-                             disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-md">
+              <input [ngModel]="newMessage()" (ngModelChange)="newMessage.set($event)" (keydown.enter)="sendMessage()"
+                     type="text" placeholder="Escribe un mensaje..."
+                     class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
+              <button (click)="sendMessage()" [disabled]="!newMessage().trim() || !isSocketConnected()"
+                      class="p-2.5 bg-[#2E4C9E] text-white rounded-xl hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-md">
                 <lucide-icon [name]="Send" class="w-5 h-5"></lucide-icon>
               </button>
             </div>
-
           } @else {
-           
             <div class="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div class="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                 <lucide-icon [name]="MessageCircle" class="w-10 h-10 text-[#2E4C9E]"></lucide-icon>
               </div>
               <h3 class="text-base font-bold text-gray-700 mb-2">Abre un chat</h3>
-              <p class="text-sm text-gray-400 max-w-xs">
-                Selecciona una conversación para comenzar a chatear
-              </p>
+              <p class="text-sm text-gray-400 max-w-xs">Selecciona una conversación para comenzar a chatear</p>
             </div>
           }
         </div>
-
       </div>
     </div>
   </div>

@@ -4,22 +4,21 @@ import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private readonly authService: AuthService, private readonly router: Router) {}
 
   canActivate(): boolean | UrlTree {
     if (!this.authService.isAuthenticated()) {
-      return this.router.createUrlTree(['']);
+      return this.router.createUrlTree(['/login']);
     }
 
     if (this.authService.hasAdminAccess()) {
       return true;
     }
 
-    // Si no es empleado, no puede acceder a /admin
     if (this.authService.hasHomeAccess()) {
       return this.router.createUrlTree(['/home']);
     }
 
-    return this.router.createUrlTree(['']);
+    return this.router.createUrlTree(['/login']);
   }
 }

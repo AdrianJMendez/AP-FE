@@ -1,0 +1,179 @@
+<div class="register-shell">
+  <section class="register-hero">
+    <div class="register-hero__badge">{{ viewConfig().badge }}</div>
+    <img src="assets/ayudapuma.png" alt="Ayuda PUMA" class="register-hero__logo" />
+    <div class="space-y-4">
+      <h1 class="register-hero__title">{{ viewConfig().title }}</h1>
+      <p class="register-hero__subtitle">{{ viewConfig().subtitle }}</p>
+    </div>
+
+    
+
+    
+  </section>
+
+  <section class="register-panel">
+    <div class="register-card">
+      <div class="register-card__header">
+        <div>
+          <p class="register-card__eyebrow">Nuevo acceso</p>
+          <h2 class="register-card__title">Completa tus datos</h2>
+        </div>
+        <a routerLink="/login" class="register-card__link">Ya tengo cuenta</a>
+      </div>
+
+      @if (error()) {
+        <div class="register-message register-message--error">
+          {{ error() }}
+        </div>
+      }
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        <div class="register-grid">
+          <div class="register-field">
+            <label for="firstName">Primer nombre</label>
+            <input
+              id="firstName"
+              type="text"
+              formControlName="firstName"
+              class="register-input"
+              [class.register-input--invalid]="firstName?.invalid && firstName?.touched"
+            />
+            @if (firstName?.invalid && firstName?.touched) {
+              <span class="register-error">
+                @if (firstName?.errors?.['required']) { El nombre es obligatorio }
+                @if (firstName?.errors?.['minlength']) { Minimo 2 caracteres }
+              </span>
+            }
+          </div>
+
+          <div class="register-field">
+            <label for="secondName">Segundo nombre</label>
+            <input
+              id="secondName"
+              type="text"
+              formControlName="secondName"
+              class="register-input"
+            />
+          </div>
+
+          <div class="register-field">
+            <label for="lastName">Primer apellido</label>
+            <input
+              id="lastName"
+              type="text"
+              formControlName="lastName"
+              class="register-input"
+              [class.register-input--invalid]="lastName?.invalid && lastName?.touched"
+            />
+            @if (lastName?.invalid && lastName?.touched) {
+              <span class="register-error">
+                @if (lastName?.errors?.['required']) { El apellido es obligatorio }
+                @if (lastName?.errors?.['minlength']) { Minimo 2 caracteres }
+              </span>
+            }
+          </div>
+
+          <div class="register-field">
+            <label for="secondLastName">Segundo apellido</label>
+            <input
+              id="secondLastName"
+              type="text"
+              formControlName="secondLastName"
+              class="register-input"
+            />
+          </div>
+        </div>
+
+        <div class="register-grid register-grid--contact">
+          <div class="register-field">
+            <label for="email">Correo electronico</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="nombre@correo.com"
+              class="register-input"
+              [class.register-input--invalid]="email?.invalid && email?.touched"
+            />
+            @if (email?.invalid && email?.touched) {
+              <span class="register-error">
+                @if (email?.errors?.['required']) { El correo es obligatorio }
+                @if (email?.errors?.['email']) { Ingresa un correo valido }
+              </span>
+            }
+          </div>
+
+          <div class="register-field">
+            <label for="phoneNumber">Telefono</label>
+            <input
+              id="phoneNumber"
+              type="tel"
+              formControlName="phoneNumber"
+              placeholder="9999-9999"
+              class="register-input"
+              [class.register-input--invalid]="phoneNumber?.invalid && phoneNumber?.touched"
+            />
+            @if (phoneNumber?.invalid && phoneNumber?.touched) {
+              <span class="register-error">
+                @if (phoneNumber?.errors?.['required']) { El telefono es obligatorio }
+                @if (phoneNumber?.errors?.['pattern']) { Usa el formato 9999-9999 }
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="register-grid">
+          <div class="register-field">
+            <label for="password">Contrasena</label>
+            <input
+              id="password"
+              type="password"
+              formControlName="password"
+              placeholder="Minimo 6 caracteres"
+              class="register-input"
+              [class.register-input--invalid]="password?.invalid && password?.touched"
+            />
+            @if (password?.invalid && password?.touched) {
+              <span class="register-error">
+                @if (password?.errors?.['required']) { La contrasena es obligatoria }
+                @if (password?.errors?.['minlength']) { Minimo 6 caracteres }
+              </span>
+            }
+          </div>
+
+          <div class="register-field">
+            <label for="confirmPassword">Confirmar contrasena</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Repite tu contrasena"
+              class="register-input"
+              [class.register-input--invalid]="confirmPassword?.invalid && confirmPassword?.touched"
+            />
+            @if (confirmPassword?.invalid && confirmPassword?.touched) {
+              <span class="register-error">
+                @if (confirmPassword?.errors?.['required']) { Confirma la contrasena }
+                @if (registerForm.errors?.['mismatch']) { Las contrasenas no coinciden }
+              </span>
+            }
+          </div>
+        </div>
+
+        <div class="register-card__footer">
+          <p class="register-card__disclaimer">
+            Al completar el registro, recibiras un codigo temporal en tu correo, no podras entrar sin antes verificarlo. Si no recibes el correo, revisa tu bandeja de spam o solicita un nuevo codigo.
+          </p>
+          <button
+            type="submit"
+            class="register-button"
+            [disabled]="registerForm.invalid || loading()"
+          >
+            {{ loading() ? 'Registrando...' : viewConfig().submitLabel }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
