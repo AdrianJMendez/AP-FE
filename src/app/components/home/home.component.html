@@ -771,7 +771,7 @@
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between mb-0.5">
                         <span class="font-semibold text-sm text-gray-800 truncate">{{ chat.otherUserName }}</span>
-                        <span class="text-[11px] text-gray-400 flex-shrink-0 ml-1">{{ getChatPreviewTime(chat.lastMessageAt) }}</span>
+                        <span class="text-[11px] text-gray-400 flex-shrink-0 ml-1">{{ chat.lastMessageAt ? (chat.lastMessageAt | localTime) : 'Nuevo' }}</span>
                       </div>
                       <p class="text-[11px] text-gray-400 truncate mb-1">{{ chat.productName }}</p>
                       <p class="text-xs text-gray-500 truncate">{{ chat.lastMessage || 'Escribe el primer mensaje' }}</p>
@@ -808,7 +808,7 @@
                          [class.bg-[#2E4C9E]]="isMine(msg)" [class.text-white]="isMine(msg)" [class.rounded-br-sm]="isMine(msg)"
                          [class.bg-white]="!isMine(msg)" [class.text-gray-800]="!isMine(msg)" [class.rounded-bl-sm]="!isMine(msg)">
                       <p>{{ msg.messageText }}</p>
-                      <p class="text-[10px] mt-1 opacity-60 text-right">{{ getMessageTime(msg.createdAt) }}</p>
+                      <p class="text-[10px] mt-1 opacity-60 text-right">{{ msg.createdAt | localTime }}</p>
                     </div>
                   </div>
                 }
