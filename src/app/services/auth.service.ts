@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface ApiMeta {
   status: number;
@@ -40,7 +41,7 @@ export interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiUrl = '/auth/login';
+  private readonly apiUrl = `${environment.apiUrl}/auth/login`;
 
   constructor(private readonly http: HttpClient) {}
 
