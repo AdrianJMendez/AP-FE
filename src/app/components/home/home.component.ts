@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AlertService } from '../../shared/alert.service';
 import { AlertComponent } from '../../shared/alert.component';
+import { LocalTimePipe } from '../../pipes/local-time-pipe';
 import { ProductService } from '../../services/product.service';
 import {
   ChatConversation,
@@ -95,7 +96,7 @@ const PRODUCT_STATE_MAP: Record<number, string> = {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, AlertComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule, AlertComponent, LocalTimePipe],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
