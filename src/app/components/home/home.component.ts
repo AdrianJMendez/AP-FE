@@ -374,10 +374,10 @@ export class HomeComponent implements OnInit, OnDestroy {
           images: product.images
             ? product.images.map((img: any) => img.imageUrl).filter(Boolean)
             : [],
-          status: (product.modalityName as Product['status']) ?? 'Venta',
+          status: (product.modalityName as Product['status']),
           idStatus: Number(product.idStatus ?? 1),
           state: PRODUCT_STATE_MAP[Number(product.idStatus ?? 1)] as Product['state'] || 'Disponible',
-          price: product.price,
+          price: product.price || 0,
           tags: [product.categoryName, product.conditionName].filter(Boolean),
           category: product.categoryName || 'Otros',
           career: 'Todas',
@@ -424,7 +424,7 @@ export class HomeComponent implements OnInit, OnDestroy {
             status: modality,
             idStatus: statusId,
             state: computedState,
-            price: product.price,
+            price: product.price || 0,
             tags: [product.categoryName, product.conditionName].filter(Boolean),
             category: product.categoryName || 'Otros',
             career: 'Todas',
