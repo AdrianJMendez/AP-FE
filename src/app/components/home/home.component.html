@@ -738,7 +738,7 @@
 @if (isMessagesOpen()) {
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeMessagesModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
-    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden" style="height: 580px;">
+    <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden" style="height: min(580px, 90vh);">
       <div class="grid h-full" style="grid-template-columns: 280px 1fr;">
         <div class="border-r flex flex-col h-full">
           <div class="p-4 border-b bg-white">
