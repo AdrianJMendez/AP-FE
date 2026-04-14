@@ -1,9 +1,9 @@
 <div class="verify-shell">
   <div class="verify-card">
-    <p class="verify-badge">Verificacion de correo</p>
-    <h1 class="verify-title">Activa tu cuenta con el codigo temporal</h1>
+    <p class="verify-badge">Verificación de correo</p>
+    <h1 class="verify-title">Activa tu cuenta con el código temporal</h1>
     <p class="verify-subtitle">
-      Cuando termines tu registro, el sistema envia un codigo a tu correo. Aqui puedes ingresarlo o pedir uno nuevo si el anterior ya vencio.
+      Cuando termines tu registro, el sistema envia un código a tu correo. Aqui puedes ingresarlo o pedir uno nuevo si el anterior ya vencío.
     </p>
 
     @if (error()) {
@@ -14,7 +14,7 @@
 
     <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="verify-form">
       <div class="verify-field">
-        <label for="email">Correo electronico</label>
+        <label for="email">Correo electrónico</label>
         <input
           id="email"
           type="email"
@@ -25,7 +25,7 @@
       </div>
 
       <div class="verify-field">
-        <label for="code">Codigo de verificacion</label>
+        <label for="code">Código de verificación</label>
         <input
           id="code"
           type="text"
@@ -48,7 +48,7 @@
         (click)="resendCode()"
         [disabled]="resendLoading()"
       >
-        {{ resendLoading() ? 'Generando...' : 'Reenviar codigo' }}
+        {{ resendLoading() ? 'Generando...' : 'Reenviar código' }}
       </button>
       <a routerLink="/login" class="verify-link">Volver al login</a>
     </div>

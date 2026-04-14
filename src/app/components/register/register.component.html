@@ -42,7 +42,7 @@
             @if (firstName?.invalid && firstName?.touched) {
               <span class="register-error">
                 @if (firstName?.errors?.['required']) { El nombre es obligatorio }
-                @if (firstName?.errors?.['minlength']) { Minimo 2 caracteres }
+                @if (firstName?.errors?.['minlength']) { Mínimo 2 caracteres }
               </span>
             }
           </div>
@@ -69,7 +69,7 @@
             @if (lastName?.invalid && lastName?.touched) {
               <span class="register-error">
                 @if (lastName?.errors?.['required']) { El apellido es obligatorio }
-                @if (lastName?.errors?.['minlength']) { Minimo 2 caracteres }
+                @if (lastName?.errors?.['minlength']) { Mínimo 2 caracteres }
               </span>
             }
           </div>
@@ -87,7 +87,7 @@
 
         <div class="register-grid register-grid--contact">
           <div class="register-field">
-            <label for="email">Correo electronico</label>
+            <label for="email">Correo electrónico</label>
             <input
               id="email"
               type="email"
@@ -99,13 +99,13 @@
             @if (email?.invalid && email?.touched) {
               <span class="register-error">
                 @if (email?.errors?.['required']) { El correo es obligatorio }
-                @if (email?.errors?.['email']) { Ingresa un correo valido }
+                @if (email?.errors?.['email']) { Ingresa un correo válido }
               </span>
             }
           </div>
 
           <div class="register-field">
-            <label for="phoneNumber">Telefono</label>
+            <label for="phoneNumber">Teléfono</label>
             <input
               id="phoneNumber"
               type="tel"
@@ -116,7 +116,7 @@
             />
             @if (phoneNumber?.invalid && phoneNumber?.touched) {
               <span class="register-error">
-                @if (phoneNumber?.errors?.['required']) { El telefono es obligatorio }
+                @if (phoneNumber?.errors?.['required']) { El teléfono es obligatorio }
                 @if (phoneNumber?.errors?.['pattern']) { Usa el formato 9999-9999 }
               </span>
             }
@@ -125,37 +125,37 @@
 
         <div class="register-grid">
           <div class="register-field">
-            <label for="password">Contrasena</label>
+            <label for="password">Contraseña</label>
             <input
               id="password"
               type="password"
               formControlName="password"
-              placeholder="Minimo 6 caracteres"
+              placeholder="Mínimo 6 caracteres"
               class="register-input"
               [class.register-input--invalid]="password?.invalid && password?.touched"
             />
             @if (password?.invalid && password?.touched) {
               <span class="register-error">
-                @if (password?.errors?.['required']) { La contrasena es obligatoria }
-                @if (password?.errors?.['minlength']) { Minimo 6 caracteres }
+                @if (password?.errors?.['required']) { La contraseña es requerida }
+                @if (password?.errors?.['minlength']) { Mínimo 6 caracteres }
               </span>
             }
           </div>
 
           <div class="register-field">
-            <label for="confirmPassword">Confirmar contrasena</label>
+            <label for="confirmPassword">Confirmar contraseña</label>
             <input
               id="confirmPassword"
               type="password"
               formControlName="confirmPassword"
-              placeholder="Repite tu contrasena"
+              placeholder="Repite tu contraseña"
               class="register-input"
               [class.register-input--invalid]="confirmPassword?.invalid && confirmPassword?.touched"
             />
             @if (confirmPassword?.invalid && confirmPassword?.touched) {
               <span class="register-error">
-                @if (confirmPassword?.errors?.['required']) { Confirma la contrasena }
-                @if (registerForm.errors?.['mismatch']) { Las contrasenas no coinciden }
+                @if (confirmPassword?.errors?.['required']) { Confirma la contraseña }
+                @if (registerForm.errors?.['mismatch']) { Las contraseñas no coinciden }
               </span>
             }
           </div>
@@ -163,7 +163,7 @@
 
         <div class="register-card__footer">
           <p class="register-card__disclaimer">
-            Al completar el registro, recibiras un codigo temporal en tu correo, no podras entrar sin antes verificarlo. Si no recibes el correo, revisa tu bandeja de spam o solicita un nuevo codigo.
+            Al completar el registro, recibiras un código temporal en tu correo, no podras entrar sin antes verificarlo. Si no recibes el correo, revisa tu bandeja de spam o solicita un nuevo código.
           </p>
           <button
             type="submit"
