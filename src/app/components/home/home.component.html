@@ -739,8 +739,8 @@
   <div class="fixed inset-0 z-[110] flex items-center justify-center p-4">
     <div (click)="closeMessagesModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
     <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl relative animate-modal-in overflow-hidden" style="height: min(580px, 90vh);">
-      <div class="grid h-full" style="grid-template-columns: 280px 1fr;">
-        <div class="border-r flex flex-col h-full">
+      <div class="grid h-full min-h-0 overflow-hidden" style="grid-template-columns: 280px 1fr;">
+        <div class="border-r flex flex-col h-full min-h-0 overflow-hidden">
           <div class="p-4 border-b bg-white">
             <div class="flex items-center justify-between mb-3">
               <h2 class="font-black text-gray-900 text-lg">Chats</h2>
@@ -785,7 +785,7 @@
             <p class="text-[11px] text-gray-500">{{ isSocketConnected() ? 'Canal en tiempo real conectado' : 'Canal en tiempo real desconectado' }}</p>
           </div>
         </div>
-        <div class="flex flex-col h-full bg-gray-50">
+        <div class="flex flex-col h-full bg-gray-50 min-h-0 overflow-hidden">
           @if (selectedChat()) {
             <div class="flex items-center gap-3 px-5 py-4 bg-white border-b shadow-sm">
               <div class="w-10 h-10 rounded-full bg-[#17a2b8] flex items-center justify-center">
@@ -796,7 +796,7 @@
                 <p class="text-[11px] text-gray-400">{{ selectedChat()!.productName }}</p>
               </div>
             </div>
-            <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3 min-h-0" #messagesContainer>
               @if (isLoadingMessages()) {
                 <p class="text-sm text-gray-400">Cargando mensajes...</p>
               } @else if (chatMessages().length === 0) {
@@ -812,6 +812,7 @@
                     </div>
                   </div>
                 }
+                <div #messagesEnd></div>
               }
             </div>
             <div class="px-4 py-3 bg-white border-t flex items-center gap-3">
