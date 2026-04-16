@@ -1,11 +1,14 @@
 import {
+  AfterViewChecked,
   Component,
   computed,
+  ElementRef,
   inject,
   OnDestroy,
   OnInit,
   PLATFORM_ID,
-  signal
+  signal,
+  ViewChild
 } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -100,13 +103,18 @@ const PRODUCT_STATE_MAP: Record<number, string> = {
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
   private readonly productService = inject(ProductService);
   private readonly chatService = inject(ChatService);
   private readonly chatSocketService = inject(ChatSocketService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   readonly alertService = inject(AlertService);
+
+  @ViewChild('messagesContainer') private messagesContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('messagesEnd') private messagesEnd!: ElementRef<HTMLDivElement>;
+
+  private shouldScrollToBottom = false;
 
   private chatEventsSubscription?: Subscription;
 
@@ -254,6 +262,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     return user.email ?? '';
   });
 
+  ngAfterViewChecked() {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  private scrollToBottom(): void {
+    try {
+      if (this.messagesEnd?.nativeElement) {
+        this.messagesEnd.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      } else if (this.messagesContainer?.nativeElement) {
+        const el = this.messagesContainer.nativeElement;
+        el.scrollTop = el.scrollHeight;
+      }
+    } catch (e) {}
+  }
+
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId)) return;
     this.loadProducts();
@@ -324,6 +350,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     if (this.selectedChatId() === message.idConversation && !alreadyLoaded) {
       this.chatMessages.update((list) => [...list, message]);
+      this.shouldScrollToBottom = true;
     }
 
     const existingConversation = this.chats().find(
@@ -896,6 +923,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.isLoadingMessages.set(false);
         if (response.hasError) { this.alertService.error('Error', response.meta?.[0]?.message || 'No se pudieron cargar los mensajes.'); return; }
         this.chatMessages.set(response.data ?? []);
+        this.shouldScrollToBottom = true;
       },
       error: (err) => {
         this.isLoadingMessages.set(false);
@@ -935,6 +963,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       this.chatSocketService.sendMessage(selectedChat.idConversation, text);
       this.newMessage.set('');
+      this.shouldScrollToBottom = true;
     } catch (err: any) {
       console.error('Error al enviar mensaje:', err);
       this.alertService.error('Error', err.message || 'No se pudo enviar el mensaje.');
